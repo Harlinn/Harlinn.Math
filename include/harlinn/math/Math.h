@@ -1,0 +1,6842 @@
+#pragma once
+#ifndef HARLINN_MATH_MATH_H_
+#define HARLINN_MATH_MATH_H_
+
+/*
+   Copyright 2024-2026 Espen Harlinn
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#include "Simd.h"
+#include "MathForward.h"
+#include "Internal/FloatingPoint.h"
+#include "Internal/OpenLibM/constexpr_math.h"
+
+#include <format>
+#include <bit>
+#include <numbers>
+
+
+namespace Harlinn::Math
+{
+    template<typename ArthmeticT>
+    struct Constants : public std::false_type
+    {};
+
+    /// <summary>
+    /// Constants for the float type.
+    /// </summary>
+    template<>
+    struct Constants<float> : public std::true_type
+    {
+        using ValueType = float;
+        static constexpr ValueType ShadowEpsilon = static_cast< ValueType >( 0.0001 );
+
+        static constexpr ValueType MinusOne = -1.f;
+        static constexpr ValueType MinusZero = -0.f;
+        static constexpr ValueType Zero = 0.f;
+        static constexpr ValueType One = 1.f;
+        static constexpr ValueType Two = 2.f;
+        static constexpr ValueType Three = 3.f;
+
+        static constexpr ValueType Pi = std::numbers::pi_v<ValueType>;
+        static constexpr ValueType NegativePi = -Pi;
+        static constexpr ValueType PiTimes2 = static_cast< ValueType >( 2. * Pi );
+        static constexpr ValueType InvPi = static_cast< ValueType >( 0.31830988618379067154 );
+        static constexpr ValueType Inv2Pi = static_cast< ValueType >( 0.15915494309189533577 );
+        static constexpr ValueType Inv4Pi = static_cast< ValueType >( 0.07957747154594766788 );
+        static constexpr ValueType PiOver2 = static_cast< ValueType >( 1.57079632679489661923 );
+        static constexpr ValueType PiOver3 = static_cast< ValueType >( Pi / 3. );
+        static constexpr ValueType PiOver4 = static_cast< ValueType >( 0.78539816339744830961 );
+        static constexpr ValueType PiOver6 = static_cast< ValueType >( Pi / 6. );
+        static constexpr ValueType Sqrt2 = static_cast< ValueType >( 1.41421356237309504880 );
+
+        static constexpr ValueType E = static_cast< ValueType >( std::numbers::e_v<ValueType> );
+        static constexpr ValueType E2 = static_cast< ValueType >( E * E );
+        static constexpr ValueType E3 = static_cast< ValueType >( E * E * E );
+
+        static constexpr ValueType Infinity = std::numeric_limits<ValueType >::infinity( );
+        static constexpr ValueType NegativeInfinity = -std::numeric_limits<ValueType >::infinity( );
+        static constexpr ValueType NaN = std::numeric_limits<ValueType >::quiet_NaN( );
+        static constexpr ValueType NegativeNaN = -std::numeric_limits<ValueType >::quiet_NaN( );
+
+        static constexpr ValueType sNaN = std::numeric_limits<ValueType >::quiet_NaN( );
+        static constexpr ValueType sNegativeNaN = -std::numeric_limits<ValueType >::signaling_NaN( );
+
+        static constexpr ValueType MachineEpsilon = std::numeric_limits<ValueType>::epsilon( ) * 0.5f;
+
+        static constexpr ValueType OneMinusEpsilon = 0x1.fffffep-1f;
+
+        static constexpr ValueType Max = std::numeric_limits<ValueType>::max( );
+        static constexpr ValueType Min = std::numeric_limits<ValueType>::min( );
+
+        static constexpr ValueType DenormalMin = std::numeric_limits<ValueType>::denorm_min( );
+
+        static constexpr ValueType Lowest = std::numeric_limits<ValueType>::lowest( );
+
+
+
+    };
+    /// <summary>
+    /// Constants for the double type.
+    /// </summary>
+    template<>
+    struct Constants<double> : public std::true_type
+    {
+        using ValueType = double;
+        static constexpr ValueType ShadowEpsilon = static_cast< ValueType >( 0.0001 );
+
+        static constexpr ValueType MinusOne = -1.;
+        static constexpr ValueType MinusZero = -0.;
+        static constexpr ValueType Zero = 0.;
+        static constexpr ValueType One = 1.;
+        static constexpr ValueType Two = 2.;
+        static constexpr ValueType Three = 3.;
+        static constexpr ValueType Pi = std::numbers::pi_v<ValueType>;
+        static constexpr ValueType NegativePi = -Pi;
+        static constexpr ValueType PiTimes2 = 2. * Pi;
+        static constexpr ValueType InvPi = 0.31830988618379067154;
+        static constexpr ValueType Inv2Pi = 0.15915494309189533577;
+        static constexpr ValueType Inv4Pi = 0.07957747154594766788;
+        static constexpr ValueType PiOver2 = 1.57079632679489661923;
+        static constexpr ValueType PiOver3 = Pi / 3.;
+        static constexpr ValueType PiOver4 = 0.78539816339744830961;
+        static constexpr ValueType PiOver6 = Pi / 6.;
+        static constexpr ValueType Sqrt2 = 1.41421356237309504880;
+
+        static constexpr ValueType E = std::numbers::e_v<ValueType>;
+        static constexpr ValueType E2 = E * E;
+        static constexpr ValueType E3 = E * E * E;
+
+        static constexpr ValueType Infinity = std::numeric_limits<ValueType>::infinity( );
+        static constexpr ValueType NegativeInfinity = -std::numeric_limits<ValueType >::infinity( );
+        static constexpr ValueType NaN = std::numeric_limits<ValueType >::quiet_NaN( );
+        static constexpr ValueType NegativeNaN = -std::numeric_limits<ValueType >::quiet_NaN( );
+
+        static constexpr ValueType sNaN = std::numeric_limits<ValueType >::quiet_NaN( );
+        static constexpr ValueType sNegativeNaN = -std::numeric_limits<ValueType >::signaling_NaN( );
+
+        static constexpr ValueType MachineEpsilon = std::numeric_limits<ValueType>::epsilon( ) * 0.5;
+        static constexpr double OneMinusEpsilon = 0x1.fffffffffffffp-1;
+
+        static constexpr ValueType Max = std::numeric_limits<ValueType>::max( );
+        static constexpr ValueType Min = std::numeric_limits<ValueType>::min( );
+
+        static constexpr ValueType DenormalMin = std::numeric_limits<ValueType>::denorm_min( );
+
+        static constexpr ValueType Lowest = std::numeric_limits<ValueType>::lowest( );
+
+    };
+
+
+
+    /// <summary>
+    /// Tests whether two floating point values holds the same value. This function
+    /// returns true if both hold the same NaN value.
+    /// </summary>
+    /// <param name="first">
+    /// A floating point value.
+    /// </param>
+    /// <param name="second">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// true if both arguments are binary equivalent, otherwise false.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] bool IsSameValue( T first, T second ) noexcept
+    {
+        if constexpr ( std::is_same_v<float, T> )
+        {
+            return std::bit_cast< Int32 >( first ) == std::bit_cast< Int32 >( second );
+        }
+        else
+        {
+            return std::bit_cast< Int64 >( first ) == std::bit_cast< Int64 >( second );
+        }
+    }
+
+    /// <summary>
+    /// Tests two integral values for equality.
+    /// </summary>
+    template<IntegerType T>
+    constexpr inline [[nodiscard]] bool IsSameValue( T first, T second ) noexcept
+    {
+        return first == second;
+    }
+
+    /// <summary>
+    /// Tests if a floating point value is zero.
+    /// </summary>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// true if the argument is zero, otherwise false.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] bool IsZero( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<float, T> )
+        {
+            return ( std::bit_cast< Int32 >( x ) & 0x7FFFFFFF ) == 0;
+        }
+        else
+        {
+            return ( std::bit_cast< Int64 >( x ) & 0x7FFFFFFFFFFFFFFF ) == 0;
+        }
+    }
+
+    /// <summary>
+    /// Tests if an integral value is zero.
+    /// </summary>
+    template<IntegerType T>
+    constexpr inline [[nodiscard]] bool IsZero( T x ) noexcept
+    {
+        return x == static_cast< T >( 0 );
+    }
+
+    /// <summary>
+    /// <para>
+    /// Returns the sign of a value for a bool or an unsigned integer type.
+    /// </para>
+    /// <para>
+    /// This function treats bool as an unsigned integer.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// bool or an unsigned integer type.
+    /// </typeparam>
+    /// <param name="val">
+    /// The value to test.
+    /// </param>
+    /// <returns>
+    /// <para>
+    /// If invoked with a bool this function returns true if the value is not false, otherwise false.
+    /// </para>
+    /// <para>
+    /// If invoked with an unsigned integer type this function returns 1 if the value is greater than 0, otherwise 0.
+    /// </para>
+    /// </returns>
+    template<UnsignedIntegerOrBooleanType T>
+    constexpr inline [[nodiscard]] T signum( T val ) noexcept
+    {
+        constexpr auto zero = static_cast< T >( 0 );
+        return static_cast< T >( val != zero ? 1 : 0 );
+    }
+
+    /// <summary>
+    /// Returns the sign of a value for a signed integer type.
+    /// </summary>
+    /// <typeparam name="T">
+    /// Any signed integer type.
+    /// </typeparam>
+    /// <param name="val">
+    /// The value to test.
+    /// </param>
+    /// <returns>
+    /// Returns:
+    /// <list type="bullet">
+    /// <item>-1 if val is less than zero.</item>
+    /// <item>0 if val is equal to zero.</item>
+    /// <item>1 if val is greater than zero.</item>
+    /// </list>
+    /// </returns>
+    template<SignedIntegerType T>
+    constexpr inline [[nodiscard]] T signum( T val ) noexcept
+    {
+        constexpr T zero = static_cast< T >( 0 );
+        constexpr T one = static_cast< T >( 1 );
+        constexpr T minusOne = static_cast< T >( -1 );
+        return val > zero ? one : ( val < zero ? minusOne : zero );
+    }
+
+    /// <summary>
+    /// Returns the sign of a value for a floating point type.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="val">
+    /// The value to test.
+    /// </param>
+    /// <returns>
+    /// Returns:
+    /// <list type="bullet">
+    /// <item>-1.0 if val is less than zero.</item>
+    /// <item>0.0 if val is equal to zero.</item>
+    /// <item>1.0 if val is greater than zero.</item>
+    /// </list>
+    /// </returns>
+    template< FloatingPointType T>
+    constexpr inline [[nodiscard]] T signum( T val ) noexcept
+    {
+        constexpr T zero = static_cast< T >( 0 );
+        constexpr T one = static_cast< T >( 1 );
+        constexpr T minusOne = static_cast< T >( -1 );
+
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            UInt32 bits = std::bit_cast< UInt32, T >( val );
+            return bits & 0x7FFFFFFF ? bits & 0x80000000 ? minusOne : one : zero;
+        }
+        else
+        {
+            UInt64 bits = std::bit_cast< UInt64, T >( val );
+            return bits & 0x7FFFFFFFFFFFFFFF ? bits & 0x8000000000000000 ? minusOne : one : zero;
+        }
+    }
+
+
+
+    /// <summary>
+    /// Converts an angle in degrees into the corresponding
+    /// angle in radians.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="angleInDegrees">
+    /// The angle in degrees.
+    /// </param>
+    /// <returns>
+    /// The angle in radians.
+    /// </returns>
+    template< FloatingPointType T>
+    constexpr inline [[nodiscard]] T Deg2Rad( T angleInDegrees ) noexcept
+    {
+        constexpr T factor = static_cast< T >( Constants< T >::Pi / 180.0 );
+        return angleInDegrees * factor;
+    }
+    /// <summary>
+    /// Converts an angle in radians into the corresponding
+    /// angle in degrees.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="angleInRadians">
+    /// The angle in radians.
+    /// </param>
+    /// <returns>
+    /// The angle in degrees.
+    /// </returns>
+    template< FloatingPointType T>
+    constexpr inline [[nodiscard]] T Rad2Deg( T angleInRadians ) noexcept
+    {
+        constexpr T factor = static_cast< T >( 180.0 / Constants< T >::Pi );
+        return angleInRadians * factor;
+    }
+
+    /// <summary>
+    /// <para>
+    /// Returns the next representable value of x in the direction of y. If x equals to y, y is returned.
+    /// </para>
+    /// </summary>
+    /// <param name="x">
+    /// A double precision floating point value.
+    /// </param>
+    /// <param name="y">
+    /// A double precision floating point value.
+    /// </param>
+    /// <returns>
+    /// The next representable value of x in the direction of y. is returned. If x equals y, then y is returned
+    /// </returns>
+    inline constexpr [[nodiscard]] double NextAfter( double x, double y ) noexcept
+    {
+        if consteval
+        {
+            return Math::Internal::OpenLibM::nextafter( x, y );
+        }
+        else
+        {
+            return std::nextafter( x, y );
+        }
+    }
+
+    /// <summary>
+    /// <para>
+    /// Returns the next representable value of x in the direction of y. If x equals to y, y is returned.
+    /// </para>
+    /// </summary>
+    /// <param name="x">
+    /// A single precision floating point value.
+    /// </param>
+    /// <param name="y">
+    /// A single precision floating point value.
+    /// </param>
+    /// <returns>
+    /// The next representable value of x in the direction of y. is returned. If x equals y, then y is returned
+    /// </returns>
+    inline constexpr [[nodiscard]] float NextAfter( float x, float y ) noexcept
+    {
+        int32_t hx = std::bit_cast< Int32 >( x );
+        int32_t hy = std::bit_cast< Int32 >( y );
+        // |x| 
+        int32_t ix = hx & 0x7fffffff;
+        // |y| 
+        int32_t iy = hy & 0x7fffffff;
+
+        // Are x or y NaN?
+        if ( ( ix > 0x7f800000 ) || ( iy > 0x7f800000 ) )
+        {
+            return x + y;
+        }
+        if ( x == y )
+        {
+            // x=y, return y 
+            return y;
+        }
+        if ( ix == 0 )
+        {
+            return CopySign( std::numeric_limits<float>::denorm_min( ), y );
+        }
+        if ( hx >= 0 )
+        {
+            // x > 0 
+            if ( hx > hy )
+            {
+                // x > y, x -= ulp 
+                hx -= 1;
+            }
+            else
+            {
+                // x < y, x += ulp 
+                hx += 1;
+            }
+        }
+        else
+        {
+            // x < 0 
+            if ( hy >= 0 || hx > hy )
+            {
+                // x < y, x -= ulp 
+                hx -= 1;
+            }
+            else
+            {
+                // x > y, x += ulp 
+                hx += 1;
+            }
+        }
+        hy = hx & 0x7f800000;
+        if ( hy >= 0x7f800000 )
+        {
+            // overflow
+            return CopySign( std::numeric_limits<float>::infinity( ), y );
+        }
+
+        x = std::bit_cast< float >( hx );
+        return x;
+    }
+
+
+    /// <summary>
+    /// <para>
+    /// Computes the square root of x.  
+    /// </para>
+    /// <para>
+    /// The runtime performance of this implementation
+    /// is equivalent to the runtime performance of std::sqrt.
+    /// </para>
+    /// <para>
+    /// Unlike std::sqrt this implementation can be constexpr 
+    /// evaluated.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point value.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// Returns the square root of x.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Sqrt( T x ) noexcept
+    {
+        if consteval
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return Math::Internal::OpenLibM::sqrtf( x );
+            }
+            else
+            {
+                return Math::Internal::OpenLibM::sqrt( x );
+            }
+        }
+        else
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return sqrtf( x );
+            }
+            else
+            {
+                T result;
+                _mm_store_sd( &result, _mm_sqrt_pd( _mm_set_sd( x ) ) );
+                return result;
+            }
+
+        }
+    }
+    static_assert( Sqrt( 2.0 ) > 0.0 );
+
+    /// <summary>
+	/// Calculates the reciprocal square root of x.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+	/// The reciprocal square root of x.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T ReciprocalSqrt( T x ) noexcept
+    {
+        if consteval
+        {
+            constexpr T one = static_cast< T >( 1. );
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                if ( x == 0.f )
+                {
+                    return CopySign( std::numeric_limits<float>::infinity( ), x );
+                }
+                return one / Math::Internal::OpenLibM::sqrtf( x );
+            }
+            else
+            {
+                if ( x == 0. )
+                {
+                    return CopySign( std::numeric_limits<double>::infinity( ), x );
+                }
+                return one / Math::Internal::OpenLibM::sqrt( x );
+            }
+        }
+        else
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                if ( x == 0.f )
+                {
+                    return CopySign( std::numeric_limits<float>::infinity( ), x );
+                }
+                __m128 v = _mm_set_ss( x );
+                
+                // ~12-bit estimate
+                __m128 e = _mm_rsqrt_ss( v ); 
+
+                // Refine rsqrt with one Newton-Raphson step to improve precision
+
+                __m128 half = _mm_set_ss( 0.5f );
+                __m128 three_halves = _mm_set_ss( 1.5f );
+                e = _mm_mul_ss( e, _mm_sub_ss( three_halves,
+                    _mm_mul_ss( _mm_mul_ss( half, v ), _mm_mul_ss( e, e ) ) ) );
+                float result;
+                _mm_store_ss( &result, e );
+                return result;
+            }
+            else
+            {
+                constexpr T one = static_cast< T >( 1. );
+                return one / Sqrt( x );
+
+            }
+        }
+    }
+
+    /// <summary>
+	/// Calculates the cube root of x.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The cube root of x.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Cbrt( T x ) noexcept
+    {
+        if consteval
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return Math::Internal::OpenLibM::cbrtf( x );
+            }
+            else
+            {
+                return Math::Internal::OpenLibM::cbrt( x );
+            }
+        }
+        else
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return Math::Internal::OpenLibM::cbrtf( x );
+            }
+            else
+            {
+                T result;
+                _mm_store_sd( &result, _mm_cbrt_pd( _mm_set_sd( x ) ) );
+                return result;
+            }
+
+        }
+    }
+    static_assert( Cbrt( 2.0 ) > 0.0 );
+
+    namespace Internal
+    {
+        template<FloatingPointType T>
+        inline constexpr [[nodiscard]] bool IsNaNImpl( T val ) noexcept
+        {
+            using UnsignedType = MakeUnsigned<T>;
+            constexpr UnsignedType fractionMask = FractionMask<T>;
+            constexpr UnsignedType exponentMask = ExponentMask<T>;
+
+            UnsignedType value = std::bit_cast< UnsignedType >( val );
+
+            if ( ( value & exponentMask ) != exponentMask )
+            {
+                return false;
+            }
+            else
+            {
+                return value & fractionMask ? true : false;
+            }
+        }
+
+
+        template<FloatingPointType T>
+        inline constexpr [[nodiscard]] bool IsInfImpl( T val ) noexcept
+        {
+            using UnsignedType = MakeUnsigned<T>;
+            constexpr UnsignedType fractionMask = FractionMask<T>;
+            constexpr UnsignedType exponentMask = ExponentMask<T>;
+
+            constexpr UnsignedType MaxExponent = FloatingPoint<T>::MaxExponent;
+            UnsignedType value = std::bit_cast< UnsignedType >( val );
+            return ( value & ( fractionMask | exponentMask ) ) == MaxExponent;
+        }
+
+        template<FloatingPointType T>
+        inline constexpr [[nodiscard]] T AbsImpl( T val ) noexcept
+        {
+            using UnsignedType = MakeUnsigned<T>;
+
+            constexpr UnsignedType FractionMask = FloatingPoint<T>::FractionMask;
+            constexpr UnsignedType ExponentMask = FloatingPoint<T>::ExponentMask;
+            constexpr UnsignedType MaxExponent = FloatingPoint<T>::MaxExponent;
+            constexpr UnsignedType SignMask = FloatingPoint<T>::SignMask;
+
+            UnsignedType bits = std::bit_cast< UnsignedType >( val );
+            // Test for neither NaN nor +/- infinity
+            if ( ( bits & ExponentMask ) != MaxExponent ) [[likely]]
+            {
+                bits &= ~SignMask;
+            }
+            else
+            {
+                // NaN or Infinity
+                if ( ( bits & FractionMask ) == 0 )
+                {
+                    // Infinity
+                    bits &= ~SignMask;
+                }
+            }
+            return std::bit_cast< T >( bits );
+        }
+
+        template<FloatingPointType T>
+        inline constexpr [[nodiscard]] bool SignBitImpl( T val ) noexcept
+        {
+            using UnsignedType = MakeUnsigned<T>;
+            constexpr UnsignedType SignMask = FloatingPoint<T>::SignMask;
+
+            UnsignedType value = std::bit_cast< UnsignedType >( val );
+            return value & SignMask;
+        }
+
+
+        /// <summary>
+        /// Returns a value with the magnitude of magnitudeVal and the sign of signVal.
+        /// </summary>
+        /// <typeparam name="T">floating point type</typeparam>
+        /// <param name="magnitudeVal">
+        /// Value with the magnitude of the resulting value.
+        /// </param>
+        /// <param name="sourceVal">
+        /// Value with the sign of the resulting value.
+        /// </param>
+        /// <returns>
+        /// The value with the magnitude of magnitudeVal and the sign of signVal.
+        /// </returns>
+        template<FloatingPointType T>
+        inline constexpr [[nodiscard]] T CopySignImpl( T magnitudeVal, T signVal ) noexcept
+        {
+            using FPType = Internal::FloatingPoint<T>;
+
+            FPType fpMagnitude( magnitudeVal );
+            FPType fpSign( signVal );
+            fpMagnitude.SetSign( fpSign.Sign( ) );
+            return fpMagnitude.AsFloatingPoint( );
+        }
+
+
+
+        template<FloatingPointType T>
+        constexpr [[nodiscard]] T LerpImpl( T a, T b, T t ) noexcept
+        {
+            constexpr T zero = static_cast< T >( 0.0 );
+            constexpr T one = static_cast< T >( 1.0 );
+            if ( ( a <= zero && b >= zero ) || ( a >= zero && b <= zero ) )
+            {
+                return t * b + ( one - t ) * a;
+            }
+            else if ( t == one )
+            {
+                return b;
+            }
+            T x = a + t * ( b - a );
+            if ( ( t > one ) == ( b > a ) )
+            {
+                return b < x ? x : b;
+            }
+            else
+            {
+                return x < b ? x : b;
+            }
+        }
+
+    }
+
+    /// <summary>
+    /// <para>
+    /// Return the largest floating point number y of the same type 
+    /// as x such that y < x. If no such y exists, e.g. if x is -Inf or NaN, then return x.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="val">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The largest floating point number y of the same type 
+    /// as x such that y < x.
+    /// </returns>
+    template<FloatingPointType T>
+    inline constexpr [[nodiscard]] T NextDown( T x ) noexcept
+    {
+        using FloatingPointType = Math::Internal::FloatingPoint<T>;
+        using UIntType = FloatingPointType::UIntType;
+        constexpr UIntType SignMask = FloatingPointType::SignMask;
+        constexpr UIntType FractionMask = FloatingPointType::FractionMask;
+        constexpr UIntType ExponentMask = FloatingPointType::ExponentMask;
+        constexpr UIntType ExponentAndFractionMask = ExponentMask | FractionMask;
+        constexpr UIntType MinusEpsilon = std::bit_cast< UIntType >( -std::numeric_limits<T>::epsilon( ) );
+        constexpr UIntType Highest = std::bit_cast< UIntType >( std::numeric_limits<T>::max( ) );
+
+        UIntType bits = std::bit_cast< UIntType >( x );
+
+
+        if ( bits & SignMask )
+        {
+            if ( ( bits & ExponentMask ) < ExponentMask )
+            {
+                bits += 1;
+            }
+        }
+        else
+        {
+            if ( ( bits & ExponentMask ) < ExponentMask )
+            {
+                if ( bits & ExponentAndFractionMask )
+                {
+                    bits -= 1;
+                }
+                else
+                {
+                    // 0
+                    bits = SignMask + 1;
+                }
+            }
+            else
+            {
+                // inf or NaN
+                if ( ( bits & FractionMask ) == 0 )
+                {
+                    // Inf
+                    bits = Highest;
+                }
+            }
+        }
+        return std::bit_cast< T >( bits );
+    }
+
+    /// <summary>
+    /// <para>
+    /// Return the smallest floating point number y of the same 
+    /// type as x such that x < y. If no such y exists, e.g. if x is 
+    /// Inf or NaN, then return x.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="val">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The smallest floating point number y of the same 
+    /// type as x such that x < y.
+    /// </returns>
+    template<FloatingPointType T>
+    inline constexpr [[nodiscard]] T NextUp( T x ) noexcept
+    {
+        using FloatingPointType = Math::Internal::FloatingPoint<T>;
+        using UIntType = FloatingPointType::UIntType;
+        constexpr UIntType SignMask = FloatingPointType::SignMask;
+        constexpr UIntType FractionMask = FloatingPointType::FractionMask;
+        constexpr UIntType ExponentMask = FloatingPointType::ExponentMask;
+        constexpr UIntType ExponentAndFractionMask = ExponentMask | FractionMask;
+        constexpr UIntType Epsilon = std::bit_cast< UIntType >( std::numeric_limits<T>::epsilon( ) );
+        constexpr UIntType Lowest = std::bit_cast< UIntType >( std::numeric_limits<T>::lowest( ) );
+
+        UIntType bits = std::bit_cast< UIntType >( x );
+        if ( bits & SignMask )
+        {
+            if ( ( bits & ExponentMask ) < ExponentMask )
+            {
+                if ( bits & ExponentAndFractionMask )
+                {
+                    bits -= 1;
+                }
+                else
+                {
+                    // -0
+                    bits = 1;
+                }
+            }
+            else
+            {
+                // -inf or NaN
+                if ( ( bits & FractionMask ) == 0 )
+                {
+                    // -Inf
+                    bits = Lowest;
+                }
+            }
+        }
+        else
+        {
+            if ( ( bits & ExponentMask ) < ExponentMask )
+            {
+                bits += 1;
+            }
+        }
+        return std::bit_cast< T >( bits );
+    }
+
+    /// <summary>
+    /// IsNaN for integer types, always returns false.
+    /// </summary>
+    /// <typeparam name="T">
+    /// Any integer type
+    /// </typeparam>
+    /// <param name="val">
+    /// Integer value.
+    /// </param>
+    /// <returns>
+    /// false
+    /// </returns>
+    template<IntegerType T>
+    constexpr inline [[nodiscard]] bool IsNaN( T val ) noexcept
+    {
+        return false;
+    }
+
+
+
+
+    /// <summary>
+    /// <para>
+    /// Determines if the given floating point number, val, 
+    /// is a not-a-number (NaN) value.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="val">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// true if val is a not-a-number (NaN) value.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] bool IsNaN( T val ) noexcept
+    {
+        if consteval
+        {
+            return Internal::IsNaNImpl<T>( val );
+        }
+        else
+        {
+            return std::isnan( val );
+        }
+    }
+
+    /// <summary>
+    /// Determines if any of the given integral or floating point values 
+    /// are a not-a-number (NaN) value.
+    /// </summary>
+    /// <typeparam name="T">
+    /// Integral or floating point type.
+    /// </typeparam>
+    /// <typeparam name="...Args">
+    /// Integral or floating point types.
+    /// </typeparam>
+    /// <param name="val">
+    /// Integral or floating point value.
+    /// </param>
+    /// <param name="...args">
+    /// Integral or floating point value.
+    /// </param>
+    /// <returns>
+    /// <c>true</c> if any of the given integral or floating point values 
+    /// is a not-a-number (NaN) value, otherwise <c>false</c>.
+    /// </returns>
+    template<ArithmeticType T, ArithmeticType ... Args>
+    constexpr inline [[nodiscard]] bool IsNaN( T val, Args ... args ) noexcept
+    {
+        if ( IsNaN( val ) )
+        {
+            return true;
+        }
+        return IsNaN( args... );
+    }
+
+
+
+    /// <summary>
+    /// Integers cannot represent infinite, so this function
+    /// always returns false.
+    /// </summary>
+    /// <typeparam name="T">
+    /// Any integer type.
+    /// </typeparam>
+    /// <param name="val">
+    /// An integer value.
+    /// </param>
+    /// <returns>
+    /// false
+    /// </returns>
+    template<IntegerType T>
+    constexpr inline [[nodiscard]] bool IsInf( T val ) noexcept
+    {
+        return false;
+    }
+    /// <summary>
+    /// <para>
+    /// Determines if the given floating point number val 
+    /// is positive or negative infinity. 
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="val">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// true if val has an infinite value, otherwise false.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] bool IsInf( T val ) noexcept
+    {
+        using FloatT = std::remove_cvref_t<T>;
+        if consteval
+        {
+            return Internal::IsInfImpl<FloatT>( val );
+        }
+        else
+        {
+            if constexpr ( std::is_same_v<FloatT, float> )
+            {
+                return Internal::IsInfImpl<FloatT>( val );
+            }
+            else
+            {
+                return std::isinf( val );
+            }
+        }
+    }
+
+
+    /// <summary>
+    /// Determines if any of the given integral or floating point numbers
+    /// is positive or negative infinity. 
+    /// </summary>
+    /// <typeparam name="T">
+    /// Integral or floating point type.
+    /// </typeparam>
+    /// <typeparam name="...Args">
+    /// Integral or floating point types.
+    /// </typeparam>
+    /// <param name="val">
+    /// Integral or floating point value.
+    /// </param>
+    /// <param name="...args">
+    /// Integral or floating point value.
+    /// </param>
+    /// <returns>
+    /// <c>true</c> if any of the given integral or floating point numbers
+    /// is positive or negative infinity, otherwise <c>false</c>. 
+    /// </returns>
+    template<ArithmeticType T, ArithmeticType ... Args>
+    constexpr inline [[nodiscard]] bool IsInf( T val, Args ... args ) noexcept
+    {
+        if ( IsInf( val ) )
+        {
+            return true;
+        }
+        return IsInf( args... );
+    }
+
+    /// <summary>
+    /// All integers have finite values.
+    /// </summary>
+    template<IntegerType T>
+    constexpr inline [[nodiscard]] bool IsFinite( T val ) noexcept
+    {
+        return true;
+    }
+
+    /// <summary>
+    /// Determines if the given floating point number val has finite 
+    /// value i.e. it is normal, subnormal or zero, but not infinite or NaN.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] bool IsFinite( T val ) noexcept
+    {
+        return Internal::OpenLibM::isfinite( val );
+    }
+
+    /// <summary>
+    /// Determines if all the arguments are finite.
+    /// </summary>
+    template<ArithmeticType T, ArithmeticType ... Args>
+    constexpr inline [[nodiscard]] bool IsFinite( T val, Args ... args ) noexcept
+    {
+        if ( IsFinite( val ) == false )
+        {
+            return false;
+        }
+        return IsFinite( args... );
+    }
+
+
+    /// <summary>
+    /// All integers, except 0, are <q>normal</q>.
+    /// </summary>
+    template<IntegerType T>
+    constexpr inline [[nodiscard]] bool IsNormal( T val ) noexcept
+    {
+        return val != static_cast< T >( 0 );
+    }
+
+    /// <summary>
+    /// Determines if the given floating point number val is normal, 
+    /// i.e. is neither zero, subnormal, infinite, nor NaN.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] bool IsNormal( T val ) noexcept
+    {
+        return Internal::OpenLibM::isnormal( val );
+    }
+
+    /// <summary>
+    /// Determines if all the arguments are normal.
+    /// </summary>
+    template<ArithmeticType T, ArithmeticType ... Args>
+    constexpr inline [[nodiscard]] bool IsNormal( T val, Args ... args ) noexcept
+    {
+        if ( IsNormal( val ) == false )
+        {
+            return false;
+        }
+        return IsNormal( args... );
+    }
+
+
+
+    /// <summary>
+    /// Computes the absolute value of a signed integer in a branchless, UB-free manner.
+    /// </summary>
+    /// <typeparam name="T">
+    /// Signed integer type (for example `int`, `long`, `long long`).
+    /// </typeparam>
+    /// <param name="val">
+    /// Input value. May be negative, zero or positive.
+    /// </param>
+    /// <returns>
+    /// The absolute value of <c>val</c> when that magnitude is representable in <c>T</c>.
+    /// If <c>val == std::numeric_limits<T>::min()</c> (magnitude not representable) the function
+    /// returns <c>std::numeric_limits<T>::max()</c> (saturated) to avoid signed overflow undefined behaviour.
+    /// </returns>
+    /// <remarks>
+    /// - Implementation uses unsigned arithmetic and bitwise operations to compute
+    ///   magnitude without performing signed negation (avoids UB).
+    /// - A mask is used to negate in the unsigned domain; and a final selection 
+    ///   saturates the single unrepresentable case.
+    /// - The function is marked <c>constexpr</c> and <c>noexcept</c>.
+    /// - Assumes two's-complement representation.
+    /// - Complexity: constant time O(1). Thread-safe and reentrant.
+    /// - If callers require the exact full magnitude of the most-negative value, prefer an API returning <c>std::make_unsigned_t<T></c>.
+    /// </remarks>
+    /// <example>
+    /// <code language="cpp">
+    /// int x = -42;
+    /// int ax = Harlinn::Math::Abs(x); // ax == 42
+    ///
+    /// int imin = std::numeric_limits<int>::min(); // -2147483648
+    /// int aimin = Harlinn::Math::Abs(imin); // aimin == std::numeric_limits<int>::max() (2147483647) - saturated
+    /// </code>
+    /// </example>
+    template<SignedIntegerType T>
+    constexpr inline [[nodiscard]] T Abs( T val ) noexcept
+    {
+        using U = MakeUnsigned<T>;
+        constexpr U MaxT = static_cast< U >( std::numeric_limits<T>::max( ) );
+        const U u = static_cast< U >( val );
+        const U mask = static_cast< U >( 0 ) - static_cast< U >( val < 0 );
+        const U absU = ( u ^ mask ) - mask;
+        const U overflowMask = static_cast< U >( 0 ) - static_cast< U >( absU > MaxT );
+        const U resultU = ( absU & ~overflowMask ) | ( MaxT & overflowMask );
+        return static_cast< T >( resultU );
+    }
+    static_assert( Abs( -1 ) == 1 );
+    static_assert( Abs( -5 ) == 5 );
+    
+
+    /// <summary>
+    /// Computes the magnitude (absolute value) of a signed integer as an unsigned value
+    /// using a branchless, UB-free algorithm.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A signed integer type (for example `int`, `long`, `long long`).
+    /// </typeparam>
+    /// <param name="val">
+    /// Input value. May be negative, zero or positive.
+    /// </param>
+    /// <returns>
+    /// The magnitude of `val` returned as `MakeUnsigned<T>`. For the most-negative value
+    /// (e.g. `std::numeric_limits<T>::min()`), the full magnitude which does not fit in
+    /// `T` is returned as the corresponding unsigned value (e.g. `2147483648u` for `int`).
+    /// </returns>
+    /// <remarks>
+    /// - Implementation operates in the unsigned domain to avoid signed negation
+    ///   overflow (undefined behaviour). It uses the mask `0 - (val < 0)` to conditionally
+    ///   flip/negate bits in two's-complement representation.
+    /// - The function is `constexpr` and `noexcept`.
+    /// - Complexity: O(1). Thread-safe and side-effect free.
+    /// - Assumes two's-complement representation.
+    /// - Use this when you need the exact unsigned magnitude (including the case of the
+    ///   most-negative signed value). If you need a signed result that saturates instead,
+    ///   prefer `Abs<T>` which returns `T` and saturates `std::numeric_limits<T>::min()` to
+    ///   `std::numeric_limits<T>::max()`.
+    /// </remarks>
+    /// <example>
+    /// <code language="cpp">
+    /// int x = -42;
+    /// auto ux = Harlinn::Math::UnsignedAbs(x); // ux == 42u
+    ///
+    /// int imin = std::numeric_limits<int>::min(); // -2147483648
+    /// auto uimin = Harlinn::Math::UnsignedAbs(imin); // uimin == 2147483648u
+    /// </code>
+    /// </example>
+    template<SignedIntegerType T>
+    constexpr inline [[nodiscard]] MakeUnsigned<T> UnsignedAbs( T val ) noexcept
+    {
+        using U = MakeUnsigned<T>;
+        const U u = static_cast<U>(val);
+        const U mask = static_cast<U>(0) - static_cast<U>(val < 0);
+        return (u ^ mask) - mask;
+    }
+    static_assert( UnsignedAbs( -2147483648 ) == 2147483648UL );
+
+    /// <summary>
+    /// Returns the magnitude of an unsigned integer value.
+    /// </summary>
+    /// <typeparam name="T">
+    /// An unsigned integer type, such as unsigned int, std::uint32_t or UInt32.
+    /// </typeparam>
+    /// <param name="val">
+    /// Input unsigned value. No preconditions.
+    /// </param>
+    /// <returns>
+    /// The same value passed in; absolute value for unsigned types is the identity function.
+    /// </returns>
+    /// <remarks>
+    /// - This overload exists to provide a uniform, generic interface for computing the unsigned magnitude of a value.
+    /// - Use this when writing generic code that calls UnsignedAbs for potentially mixed signed/unsigned types.
+    /// </remarks>
+    /// <example>
+    /// <code language="cpp">
+    /// unsigned int u = 42u;
+    /// auto mag = Harlinn::Math::UnsignedAbs(u); // mag == 42u
+    /// </code>
+    /// </example>
+    template<UnsignedIntegerType T>
+    constexpr inline [[nodiscard]] T UnsignedAbs( T val ) noexcept
+    {
+        return val;
+    }
+
+    /// <summary>
+    /// The absolute value of any unsigned integer
+    /// is the same as its value.
+    /// </summary>
+    /// <typeparam name="T">
+    /// Any unsigned integer type.
+    /// </typeparam>
+    /// <param name="val">
+    /// An unsigned integer value.
+    /// </param>
+    /// <returns>
+    /// val without any modification.
+    /// </returns>
+    template<UnsignedIntegerType T>
+    constexpr inline [[nodiscard]] T Abs( T val ) noexcept
+    {
+        return val;
+    }
+
+    /// <summary>
+    /// <para>
+    /// Computes the absolute value of a floating point value.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="val">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The absolute value of val.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Abs( T val ) noexcept
+    {
+        if consteval
+        {
+            return Internal::AbsImpl( val );
+        }
+        else
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return std::fabsf( val );
+            }
+            else
+            {
+                return Internal::OpenLibM::fabs( val );
+            }
+        }
+    }
+    static_assert( Abs( -1.0 ) == 1.0 );
+
+
+    /// <summary>
+	/// Returns value since the absolute value of an unsigned integer is the value itself.
+    /// </summary>
+    /// <typeparam name="T">
+    /// Any unsigned integer type.
+    /// </typeparam>
+    /// <param name="val">
+    /// An unsigned integer value.
+    /// </param>
+    /// <returns>
+    /// The absolute value of val.
+    /// </returns>
+    template<UnsignedIntegerType T>
+    constexpr inline [[nodiscard]] T FastAbs( T val ) noexcept
+    {
+        return val;
+    }
+
+    /// <summary>
+	/// Returns the absolute value of a signed integer using a branchless algorithm.
+    /// </summary>
+    /// <typeparam name="T">
+    /// Any signed integer type.
+    /// </typeparam>
+    /// <param name="val">
+    /// A signed integer value.
+    /// </param>
+    /// <returns>
+    /// The absolute value of val.
+    /// </returns>
+    template<SignedIntegerType T>
+    constexpr inline [[nodiscard]] T FastAbs( T val ) noexcept
+    {
+        return Abs( val );
+    }
+
+    /// <summary>
+	/// Returns the absolute value of a floating point number using a branchless algorithm.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="val">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The absolute value of val.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T FastAbs( T val ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            constexpr UInt32 Mask = 0x7FFFFFFFu;
+            const UInt32 bits = std::bit_cast< UInt32 >( val ) & Mask;
+            return std::bit_cast< T >( bits );
+        }
+        else
+        {
+            static_assert( sizeof( UInt64 ) == sizeof( T ) );
+            constexpr UInt64 Mask = 0x7FFFFFFFFFFFFFFFull;
+            const UInt64 bits = std::bit_cast< UInt64 >( val ) & Mask;
+            return std::bit_cast< T >( bits );
+        }
+    }
+
+
+    /// <summary>
+    /// Determines if the given signed integer value is negative.
+    /// </summary>
+    /// <typeparam name="T">
+    /// Any signed integer type.
+    /// </typeparam>
+    /// <param name="val">
+    /// A signed integer value.
+    /// </param>
+    /// <returns>
+    /// returns true if the value is signed, otherwise false.
+    /// </returns>
+    template<SignedIntegerType T>
+    constexpr inline [[nodiscard]] bool SignBit( T val ) noexcept
+    {
+        using UIntT = std::make_unsigned_t<T>;
+        constexpr size_t ByteCount = sizeof( T );
+        constexpr size_t ShiftCount = ( ( ByteCount - 1 ) * 8 ) + 7;
+        constexpr UIntT UnsignedSignMask = static_cast< UIntT >( 1 ) << ShiftCount;
+        constexpr T SignMask = std::bit_cast< T >( UnsignedSignMask );
+        return ( val & SignMask ) != 0;
+    }
+
+    /// <summary>
+    /// An Implementation of SignBit for unsigned integers
+    /// that always returns false.
+    /// </summary>
+    /// <typeparam name="T">
+    /// Any unsigned integer type.
+    /// </typeparam>
+    /// <param name="val">
+    /// An unsigned integer value.
+    /// </param>
+    /// <returns>
+    /// false
+    /// </returns>
+    template<UnsignedIntegerType T>
+    constexpr inline [[nodiscard]] bool SignBit( T val ) noexcept
+    {
+        return false;
+    }
+
+    /// <summary>
+    /// <para>
+    /// Determines if the given floating point number is negative.
+    /// </para>
+    /// <para>
+    /// Currently this implementation is 70 % faster than std::signbit,
+    /// and it can also be constexpr evaluated.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="val">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// true if val is less than 0.0.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] bool SignBit( T val ) noexcept
+    {
+        return Internal::SignBitImpl( val );
+    }
+
+    /// <summary>
+    /// <para>
+    /// Decomposes the given floating point value val into a normalized 
+    /// fraction and an integral power of two.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="val">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// <para>
+    /// A std::pair&lt;&gt;> with the normalized fraction
+    /// stored in first and the exponent stored in second.
+    /// </para>
+    /// <para>
+    /// If val is zero, both first and second are set to zero.
+    /// </para>
+    /// <para>
+    /// If val is not zero, and no errors occur, the function returns a value,
+    /// x, in the range( -1; -0.5], [ 0.5; 1 ) in first and stores an integer value in 
+    /// second such that result.first*2^( result.second ) = val.
+    /// </para>
+    /// <para>
+    /// If the value to be stored in result.second is outside the range of int, the behavior is unspecified.
+    /// </para>
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] std::pair<T, int> FRExp( T val ) noexcept
+    {
+        std::pair<T, int> result;
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            result.first = Internal::OpenLibM::frexpf( val, &result.second );
+        }
+        else
+        {
+            if consteval
+            {
+                result.first = Internal::OpenLibM::frexp( val, &result.second );
+            }
+            else
+            {
+                result.first = std::frexp( val, &result.second );
+            }
+            
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// <para>
+    /// Decomposes the given floating point value val into a normalized 
+    /// fraction and an integral power of two.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="val">
+    /// A floating point value.
+    /// </param>
+    /// <param name="exp">
+    /// A pointer to an integer value to store the exponent to.
+    /// </param>
+    /// <returns>
+    /// <para>
+    /// If val is zero, returns zero and stores zero in *exp.
+    /// </para>
+    /// <para>
+    /// If val is not zero, and no errors occur, the function returns a value,
+    /// x, in the range( -1; -0.5], [ 0.5; 1 ) and stores an integer value in 
+    /// *exp such that x*2^( *exp ) = val.
+    /// </para>
+    /// <para>
+    /// If the value to be stored in *exp is outside the range of int, the behavior is unspecified.
+    /// </para>
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T FRExp( T val, int* exp ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Internal::OpenLibM::frexpf( val, exp );
+        }
+        else
+        {
+            if consteval
+            {
+                return Internal::OpenLibM::frexp( val, exp );
+            }
+            else
+            {
+                return std::frexp( val, exp );
+            }
+        }
+    }
+    /// <summary>
+    /// <para>
+    /// Decomposes the given floating point value val into a normalized 
+    /// fraction and an integral power of two.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="val">
+    /// A floating point value.
+    /// </param>
+    /// <param name="exp">
+    /// A reference to an integer value to store the exponent to.
+    /// </param>
+    /// <returns>
+    /// <para>
+    /// If val is zero, returns zero and stores zero in exp.
+    /// </para>
+    /// <para>
+    /// If val is not zero, and no errors occur, the function returns a value,
+    /// x, in the range( -1; -0.5], [ 0.5; 1 ) and stores an integer value in 
+    /// exp such that x*2^( exp ) = val.
+    /// </para>
+    /// <para>
+    /// If the value to be stored in exp is outside the range of int, the behavior is unspecified.
+    /// </para>
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T FRExp( T val, int& exp ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Internal::OpenLibM::frexpf( val, &exp );
+        }
+        else
+        {
+            if consteval
+            {
+                return Internal::OpenLibM::frexp( val, &exp );
+            }
+            else
+            {
+                return std::frexp( val, &exp );
+            }
+        }
+    }
+
+    /// <summary>
+    /// <para>
+    /// Decomposes floating-point value val into its integral and 
+    /// fractional parts, each with the same type and sign as val.
+    /// </para>
+    /// <para>
+    /// This implementation can also be constexpr evaluated.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="ValueT">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="val">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// A std::pair&lt;T,T&gt; where first holds the integral part 
+    /// of the result and second holds the fractional part.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] std::pair<T, T> ModF( T val ) noexcept
+    {
+        std::pair<T, T> result;
+
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            result.second = Internal::OpenLibM::modff( val, &result.first );
+        }
+        else
+        {
+            if consteval
+            {
+                result.second = Internal::OpenLibM::modf( val, &result.first );
+            }
+            else
+            { 
+                result.second = std::modf( val, &result.first );
+            }
+        }
+        return result;
+    }
+    /// <summary>
+    /// <para>
+    /// Decomposes floating-point value val into its integral and 
+    /// fractional parts, each with the same type and sign as val.
+    /// </para>
+    /// <para>
+    /// This implementation can also be constexpr evaluated.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="ValueT">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="val">
+    /// A floating point value.
+    /// </param>
+    /// <param name="integerPart">
+    /// A pointer to a variable of the ValueT floating point type
+    /// that receives the integral part of val.
+    /// </param>
+    /// <returns>
+    /// The fractional part of val.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T ModF( T val, T* integerPart ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Internal::OpenLibM::modff( val, integerPart );
+        }
+        else
+        {
+            if consteval
+            {
+                return Internal::OpenLibM::modf( val, integerPart );
+            }
+            else
+            {
+                return std::modf( val, integerPart );
+            }
+        }
+    }
+
+    /// <summary>
+    /// <para>
+    /// Decomposes floating-point value val into its integral and 
+    /// fractional parts, each with the same type and sign as val.
+    /// </para>
+    /// <para>
+    /// This implementation can also be constexpr evaluated.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="ValueT">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="val">
+    /// A floating point value.
+    /// </param>
+    /// <param name="integerPart">
+    /// A reference to a variable of the ValueT floating point type
+    /// that receives the integral part of val.
+    /// </param>
+    /// <returns>
+    /// The fractional part of val.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T ModF( T val, T& integerPart ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Internal::OpenLibM::modff( val, &integerPart );
+        }
+        else
+        {
+            if consteval
+            { 
+                return Internal::OpenLibM::modf( val, &integerPart );
+            }
+            else
+            {
+                return std::modf( val, &integerPart );
+            }
+        }
+    }
+
+
+    namespace Internal
+    {
+        template<FloatingPointType T>
+        constexpr inline [[nodiscard]] T MaxImpl( T x, T y )
+        {
+            // Check for NaNs to avoid raising spurious exceptions. 
+            if ( IsNaN( x ) )
+            {
+                return y;
+            }
+
+            if ( IsNaN( y ) )
+            {
+                return x;
+            }
+
+            // Handle comparisons of signed zeroes. 
+            auto sx = FastSignBit( x );
+            auto sy = FastSignBit( y );
+            if ( sx != sy )
+            {
+                return sx < sy ? x : y;
+            }
+
+            return ( x > y ? x : y );
+        }
+
+        template<FloatingPointType T>
+        constexpr inline [[nodiscard]] T MinImpl( T x, T y )
+        {
+            // Check for NaNs to avoid raising spurious exceptions. 
+            if ( IsNaN( x ) )
+            {
+                return y;
+            }
+
+            if ( IsNaN( y ) )
+            {
+                return x;
+            }
+
+            // Handle comparisons of signed zeroes. 
+            auto sx = FastSignBit( x );
+            auto sy = FastSignBit( y );
+            if ( sx != sy )
+            {
+                return sx > sy ? x : y;
+            }
+
+            return ( x < y ? x : y );
+        }
+
+    }
+
+    /// <summary>
+    /// Returns the smaller of the given values.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="first">
+    /// The first floating point value.
+    /// </param>
+    /// <param name="second">
+    /// The second floating point value.
+    /// </param>
+    /// <returns>
+    /// Returns the smaller of <c>first</c> and <c>second</c>.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Min( T first, T second ) noexcept
+    {
+        if consteval
+        {
+            return Internal::MinImpl( first, second );
+        }
+        else
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return fminf( first, second );
+            }
+            else
+            {
+                return fmin( first, second );
+            }
+        }
+    }
+    /// <summary>
+    /// Returns the smaller of the given values.
+    /// </summary>
+    /// <typeparam name="T">
+    /// An integer type.
+    /// </typeparam>
+    /// <param name="first">
+    /// The first integer value.
+    /// </param>
+    /// <param name="second">
+    /// The second integer value.
+    /// </param>
+    /// <returns>
+    /// Returns the smaller of <c>first</c> and <c>second</c>.
+    /// </returns>
+    template<IntegerType T>
+    constexpr inline [[nodiscard]] T Min( T first, T second ) noexcept
+    {
+        return std::min( first, second );
+    }
+
+    /// <summary>
+	/// Returns the smaller of the given values.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <typeparam name="...Args">
+    /// A variadic list of floating point types.
+    /// </typeparam>
+    /// <param name="first">
+    /// The first floating point value.
+    /// </param>
+    /// <param name="second">
+    /// The second floating point value.
+    /// </param>
+    /// <param name="...remaining">
+    /// The remaining floating point values.
+    /// </param>
+    /// <returns>
+    /// Returns the smaller of the given values.
+    /// </returns>
+    template<FloatingPointType T, FloatingPointType ...Args>
+    constexpr inline [[nodiscard]] T Min( T first, T second, Args... remaining ) noexcept
+    {
+        return Min( Min( first, second ), remaining... );
+    }
+
+    /// <summary>
+	/// Returns the smaller of the given values.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <typeparam name="...Args">
+    /// A variadic list of floating point types.
+    /// </typeparam>
+    /// <param name="first">
+    /// The first floating point value.
+    /// </param>
+    /// <param name="second">
+    /// The second floating point value.
+    /// </param>
+    /// <param name="...remaining">
+    /// The remaining floating point values.
+    /// </param>
+    /// <returns>
+    /// Returns the smaller of the given values.
+    /// </returns>
+    template<IntegerType T, IntegerType ...Args>
+    constexpr inline [[nodiscard]] T Min( T first, T second, Args... remaining ) noexcept
+    {
+        return Min( Min( first, second ), remaining... );
+    }
+
+
+
+    /// <summary>
+    /// Returns the larger of the given values.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="first">
+    /// The first floating point value.
+    /// </param>
+    /// <param name="second">
+    /// The second floating point value.
+    /// </param>
+    /// <returns>
+    /// Returns the larger of <c>first</c> and <c>second</c>.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Max( T first, T second ) noexcept
+    {
+        if consteval
+        {
+            return Internal::MaxImpl( first, second );
+        }
+        else
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return fmaxf( first, second );
+            }
+            else
+            {
+                return fmax( first, second );
+            }
+        }
+
+    }
+    /// <summary>
+    /// Returns the larger of the given values.
+    /// </summary>
+    /// <typeparam name="T">
+    /// An integer type.
+    /// </typeparam>
+    /// <param name="first">
+    /// The first integer value.
+    /// </param>
+    /// <param name="second">
+    /// The second integer value.
+    /// </param>
+    /// <returns>
+    /// Returns the larger of <c>first</c> and <c>second</c>.
+    /// </returns>
+    template<IntegerType T>
+    constexpr inline [[nodiscard]] T Max( T first, T second ) noexcept
+    {
+        return std::max( first, second );
+    }
+
+
+    /// <summary>
+	/// Returns the larger of the given values.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <typeparam name="...Args">
+    /// A variadic list of floating point types.
+    /// </typeparam>
+    /// <param name="first">
+    /// The first floating point value.
+    /// </param>
+    /// <param name="second">
+    /// The second floating point value.
+    /// </param>
+    /// <param name="...remaining">
+    /// The remaining floating point values.
+    /// </param>
+    /// <returns>
+    /// Returns the larger of the given values.
+    /// </returns>
+    template<FloatingPointType T, FloatingPointType ...Args>
+    constexpr inline [[nodiscard]] T Max( T first, T second, Args... remaining ) noexcept
+    {
+        return Max( Max( first, second ), remaining... );
+    }
+
+    template<IntegerType T, IntegerType ...Args>
+    constexpr inline [[nodiscard]] T Max( T first, T second, Args... remaining ) noexcept
+    {
+        return Max( Max( first, second ), remaining... );
+    }
+
+
+    /// <summary>
+	/// Returns the product of all the given values.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A span-like type.
+    /// </typeparam>
+    /// <param name="values">
+    /// The values to multiply.
+    /// </param>
+    /// <returns>
+    /// Returns the product of all the given values.
+    /// </returns>
+    template<SimpleSpanLike T>
+        requires IsArithmetic<typename T::value_type>
+    constexpr inline [[nodiscard]] typename T::value_type Multiply( const T& values )
+    {
+        using ValueType = typename T::value_type;
+        ValueType result = static_cast< ValueType >( 1 );
+        for ( auto v : values )
+        {
+            result *= v;
+        }
+        return result;
+    }
+
+
+
+    /// <summary>
+    /// <para>
+    /// Computes the nearest integer not greater in magnitude than value.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="value">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// A floating point value with the nearest integer not 
+    /// greater in magnitude than value.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Trunc( T value ) noexcept
+    {
+        if consteval
+        {
+            Internal::FloatingPoint<T> tmp( value );
+            return tmp.Trunc( );
+        }
+        else
+        {
+            if constexpr ( std::is_same_v<double, T> )
+            {
+                double result;
+                _mm_store_sd( &result, _mm_round_pd( _mm_set_sd( value ), _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC ) );
+                return result;
+            }
+            else
+            {
+                float result;
+                _mm_store_ss( &result, _mm_round_ps( _mm_set_ss( value ), _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC ) );
+                return result;
+
+            }
+        }
+    }
+
+    /// <summary>
+    /// Just returns value.
+    /// </summary>
+    /// <typeparam name="T">
+    /// An integer type.
+    /// </typeparam>
+    /// <param name="value">
+    /// An integer value.
+    /// </param>
+    /// <returns>
+    /// value
+    /// </returns>
+    template<IntegerType T>
+    constexpr inline [[nodiscard]] T Trunc( T value ) noexcept
+    {
+        return value;
+    }
+
+
+    /// <summary>
+    /// <para>
+    /// Computes the largest integer value not greater than value.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="value">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The largest integer value not greater than value.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Floor( T value ) noexcept
+    {
+        if consteval
+        {
+            Internal::FloatingPoint<T> tmp( value );
+            return tmp.Floor( );
+        }
+        else
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return __floorf( value );
+            }
+            else
+            {
+                return __floor( value );
+            }
+        }
+    }
+
+    /// <summary>
+    /// Just returns value.
+    /// </summary>
+    /// <typeparam name="T">
+    /// An integer type.
+    /// </typeparam>
+    /// <param name="value">
+    /// An integer value.
+    /// </param>
+    /// <returns>
+    /// value
+    /// </returns>
+    template<IntegerType T>
+    constexpr inline [[nodiscard]] T Floor( T value ) noexcept
+    {
+        return value;
+    }
+
+
+    /// <summary>
+    /// <para>
+    /// Computes the smallest integer value not less than value.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="value">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The smallest integer value not less than value.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Ceil( T value ) noexcept
+    {
+        if consteval
+        {
+            Math::Internal::FloatingPoint<T> tmp( value );
+            return tmp.Ceil( );
+        }
+        else
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return __ceilf( value );
+            }
+            else
+            {
+                return __ceil( value );
+            }
+        }
+    }
+
+    /// <summary>
+    /// Just returns value.
+    /// </summary>
+    /// <typeparam name="T">
+    /// An integer type.
+    /// </typeparam>
+    /// <param name="value">
+    /// An integer value.
+    /// </param>
+    /// <returns>
+    /// value
+    /// </returns>
+    template<IntegerType T>
+    constexpr inline [[nodiscard]] T Ceil( T value ) noexcept
+    {
+        return value;
+    }
+
+
+
+    /// <summary>
+    /// <para>
+    /// Computes the nearest integer to value, in floating-point format, 
+    /// rounding halfway cases away from zero.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="value">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The nearest integer to value.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Round( T value ) noexcept
+    {
+        if consteval
+        {
+            Internal::FloatingPoint<T> tmp( value );
+            return tmp.Round( );
+        }
+        else
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return __roundf( value );
+            }
+            else
+            {
+                double result;
+                _mm_store_sd( &result, _mm_round_pd( _mm_set_sd( value ), _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC ) );
+                return result;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Just returns value.
+    /// </summary>
+    /// <typeparam name="T">
+    /// An integer type.
+    /// </typeparam>
+    /// <param name="value">
+    /// An integer value.
+    /// </param>
+    /// <returns>
+    /// value
+    /// </returns>
+    template<IntegerType T>
+    constexpr inline [[nodiscard]] T Round( T value ) noexcept
+    {
+        return value;
+    }
+
+
+    /// <summary>
+    /// <para>
+    /// If the value is within [minimumValue, maximumValue], the function 
+    /// returns value, otherwise returns the nearest boundary.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// Any type that supports the <c>&lt;<c> operator.
+    /// </typeparam>
+    /// <param name="value">
+    /// The value to clamp.
+    /// </param>
+    /// <param name="minimumValue">
+    /// The lower boundary.
+    /// </param>
+    /// <param name="maximumValue">
+    /// The upper boundary.
+    /// </param>
+    /// <returns>
+    /// The value within [minimumValue, maximumValue], or the nearest boundary.
+    /// </returns>
+    template<ArithmeticType T1, ArithmeticType T2, ArithmeticType T3>
+    constexpr inline [[nodiscard]] T1 Clamp( T1 value, T2 minimumValue, T3 maximumValue ) noexcept
+    {
+        if ( value < static_cast< T1 >( minimumValue ) )
+        {
+            return static_cast< T1 >( minimumValue );
+        }
+        else if ( static_cast< T1 >( maximumValue ) < value )
+        {
+            return static_cast< T1 >( maximumValue );
+        }
+        else
+        {
+            return value;
+        }
+    }
+
+    /// <summary>
+    /// <para>
+    /// Computes the linear interpolation between a and b, if the 
+    /// parameter t is inside [​0​, 1), the linear extrapolation otherwise, 
+    /// i.e. the result of a + t * ( b - a ) with accounting 
+    /// for floating point calculation imprecision.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="U"></typeparam>
+    /// <param name="a">An arithmetic type.</param>
+    /// <param name="b">An arithmetic type.</param>
+    /// <param name="t">An arithmetic type.</param>
+    /// <returns>
+    /// The interpolated or extrapolated result. 
+    /// </returns>
+    template<ArithmeticType T, ArithmeticType U>
+    constexpr inline [[nodiscard]] auto Lerp( T a, T b, U t ) noexcept
+    {
+        if consteval
+        {
+            return Internal::LerpImpl( a, b, t );
+            //return ( 1 - t ) * a + t * b;
+        }
+        else
+        {
+            return std::fma( t, b, std::fma( -t, a, a ) );
+        }
+    }
+
+    template<ArithmeticType T, ArithmeticType U>
+    constexpr inline [[nodiscard]] auto Lerp2( U t, T a, T b ) noexcept
+    {
+        return ( 1 - t ) * a + t * b;
+    }
+
+    /// <summary>
+    /// <para>
+    /// Composes a floating point value with the magnitude 
+    /// of <c>magnitude</c> and the sign of <c>signValue</c>.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="magnitude">
+    /// A floating point value.
+    /// </param>
+    /// <param name="signValue">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// A floating point value with the magnitude 
+    /// of <c>magnitude</c> and the sign of <c>signValue</c>.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T CopySign( T magnitude, T signValue ) noexcept
+    {
+        if consteval
+        {
+            return Math::Internal::CopySignImpl<T>( magnitude, signValue );
+        }
+        else
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return Internal::OpenLibM::copysignf( magnitude, signValue );
+            }
+            else
+            {
+                return Math::Internal::CopySignImpl<T>( magnitude, signValue );
+            }
+        }
+
+    }
+    /// <summary>
+    /// <para>
+    /// Multiplies a double precision floating point value 
+    /// <c>x</c> multplied by <c>FLT_RADIX</c> raised to power <c>n</c>.
+    /// </para>
+    /// <para>
+    /// FLT_RADIX is the radix used by the representation 
+    /// of the floating point types.
+    /// </para>
+    /// </summary>
+    /// <param name="x">
+    /// A double precision floating point value. 
+    /// </param>
+    /// <param name="n">
+    /// An integer.
+    /// </param>
+    /// <returns>
+    /// <c>x</c> multiplied by <c>FLT_RADIX</c> raised to power <c>n</c>
+    /// </returns>
+    inline constexpr [[nodiscard]] double ScaleBN( double x, int n ) noexcept
+    {
+        constexpr double two54 = 1.80143985094819840000e+16;
+        constexpr double twom54 = 5.55111512312578270212e-17;
+        constexpr double huge = 1.0e+300;
+        constexpr double tiny = 1.0e-300;
+
+        Int32 hx = static_cast< Int32 >( std::bit_cast< Int64 >( x ) >> 32 );
+        Int32 lx = static_cast< Int32 >( std::bit_cast< Int64 >( x ) );
+
+        // extract exponent 
+        int32_t k = ( hx & 0x7ff00000 ) >> 20;
+        if ( k == 0 )
+        {
+            // 0 or subnormal x 
+            if ( ( lx | ( hx & 0x7fffffff ) ) == 0 )
+            {
+                // +-0 
+                return x;
+            }
+            x *= two54;
+            hx = GetHigh32Bits<Int32>( x );
+            k = ( ( hx & 0x7ff00000 ) >> 20 ) - 54;
+            if ( n < -50000 )
+            {
+                // underflow
+                return tiny * x;
+            }
+        }
+        if ( k == 0x7ff )
+        {
+            // NaN or Inf 
+            return x + x;
+        }
+        k = k + n;
+        if ( k > 0x7fe )
+        {
+            // overflow  
+            return CopySign( std::numeric_limits<double>::infinity( ), x );
+            //return huge * CopySign( huge, x );
+        }
+        if ( k > 0 )
+        {
+            // normal result 
+            x = SetHigh32Bits<Int32>( x, ( hx & 0x800fffff ) | ( k << 20 ) );
+            return x;
+        }
+        if ( k <= -54 )
+        {
+            // in case integer overflow in n+k 
+            if ( n > 50000 )
+            {
+                // overflow
+                return huge * CopySign( huge, x );
+            }
+            else
+            {
+                // underflow
+                return tiny * CopySign( tiny, x );
+            }
+        }
+        k += 54;
+        // subnormal result 
+        x = SetHigh32Bits<Int32>( x, ( hx & 0x800fffff ) | ( k << 20 ) );
+        return x * twom54;
+    }
+    /// <summary>
+    /// <para>
+    /// Multiplies a double precision floating point value 
+    /// <c>x</c> multplied by <c>FLT_RADIX</c> raised to power <c>n</c>.
+    /// </para>
+    /// <para>
+    /// FLT_RADIX is the radix used by the representation 
+    /// of the floating point types.
+    /// </para>
+    /// </summary>
+    /// <param name="x">
+    /// A double precision floating point value. 
+    /// </param>
+    /// <param name="n">
+    /// An integer.
+    /// </param>
+    /// <returns>
+    /// <c>x</c> multplied by <c>FLT_RADIX</c> raised to power <c>n</c>
+    /// </returns>
+    inline constexpr [[nodiscard]] float ScaleBN( float x, int n ) noexcept
+    {
+        constexpr float two25 = 3.355443200e+07f;
+        constexpr float twom25 = 2.9802322388e-08f;
+        constexpr float huge = 1.0e+30f;
+        constexpr float tiny = 1.0e-30f;
+
+        Int32 ix = std::bit_cast< Int32 >( x );
+
+        // extract exponent 
+        Int32 k = ( ix & 0x7f800000 ) >> 23;
+        if ( k == 0 )
+        {
+            // 0 or subnormal x 
+            if ( ( ix & 0x7fffffff ) == 0 )
+            {
+                // +-0 
+                return x;
+            }
+            x *= two25;
+            ix = std::bit_cast< Int32 >( x );
+            k = ( ( ix & 0x7f800000 ) >> 23 ) - 25;
+            if ( n < -50000 )
+            {
+                // underflow
+                return tiny * x;
+            }
+        }
+        if ( k == 0xff )
+        {
+            // NaN or Inf 
+            return x + x;
+        }
+        k = k + n;
+        if ( k > 0xfe )
+        {
+            // overflow  
+            return CopySign( std::numeric_limits<float>::infinity( ), x );
+            //return huge * CopySign( huge, x ); 
+        }
+        if ( k > 0 )
+        {
+            // normal result 
+            return std::bit_cast< float >( ( ix & 0x807fffff ) | ( k << 23 ) );
+        }
+        if ( k <= -25 )
+        {
+            if ( n > 50000 )
+            {
+                // in case integer overflow in n+k: overflow  
+                return huge * copysignf( huge, x );
+            }
+            else
+            {
+                // underflow
+                return tiny * copysignf( tiny, x );
+            }
+        }
+        // subnormal result 
+        k += 25;
+        x = std::bit_cast< float >( ( ix & 0x807fffff ) | ( k << 23 ) );
+        return x * twom25;
+    }
+
+
+    /// <summary>
+    /// <para>
+    /// Computes the point remainder of the division operation <c>x / y</c>.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value. 
+    /// </param>
+    /// <param name="y">
+    /// A floating point value. 
+    /// </param>
+    /// <returns>
+    /// The floating point remainder of the division operation <c>x / y</c>.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T FMod( T x, T y ) noexcept
+    {
+        if consteval
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return Internal::OpenLibM::fmodf( x, y );
+            }
+            else
+            {
+                return Internal::OpenLibM::fmod( x, y );
+            }
+        }
+        else
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return Internal::OpenLibM::fmodf( x, y );
+            }
+            else
+            {
+                return std::fmod( x, y );
+            }
+        }
+    }
+
+
+    /// <summary>
+    /// <para>
+    /// Computes <c>e</c>, <c>2.7182818</c>, raised to the given power <c>x</c>.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// <c>e</c> raised to the given power <c>x</c>.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Exp( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::expf( x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::exp( x );
+        }
+    }
+
+    /// <summary>
+	/// Calculates e raised to the given power minus one.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// <c>e</c> raised to the given power <c>x</c> minus one.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T ExpM1( T x ) noexcept
+    {
+        if consteval
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return Math::Internal::OpenLibM::expm1f( x );
+            }
+            else
+            {
+                return Math::Internal::OpenLibM::expm1( x );
+            }
+        }
+        else
+        {
+
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                //_mm_store_ss( &result, _mm_expm1_ps( _mm_set_ss( x ) ) );
+                return Math::Internal::OpenLibM::expm1f( x );
+            }
+            else
+            {
+                //T result;
+                //_mm_store_sd( &result, _mm_expm1_pd( _mm_set_sd( x ) ) );
+                //return result;
+                return std::expm1( x );
+            }
+
+        }
+    }
+
+    /// <summary>
+	/// Computes 2 raised to the given power <c>x</c>.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// <c>2</c> raised to the given power <c>x</c>.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Exp2( T x ) noexcept
+    {
+        if consteval
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return Math::Internal::OpenLibM::exp2f( x );
+            }
+            else
+            {
+                return Math::Internal::OpenLibM::exp2( x );
+            }
+        }
+        else
+        {
+            T result;
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                _mm_store_ss( &result, _mm_exp2_ps( _mm_set_ss( x ) ) );
+            }
+            else
+            {
+                _mm_store_sd( &result, _mm_exp2_pd( _mm_set_sd( x ) ) );
+            }
+            return result;
+        }
+    }
+
+    namespace Internal
+    {
+        inline constexpr [[nodiscard]] double Exp10Impl( double x ) noexcept
+        {
+            return Pow( 10.0, x );
+        }
+
+        inline constexpr [[nodiscard]] float Exp10Impl( float x ) noexcept
+        {
+            return Pow( 10.0f, x );
+        }
+
+    }
+
+    /// <summary>
+	/// Computes 10 raised to the given power <c>x</c>.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// <c>10</c> raised to the given power <c>x</c>.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Exp10( T x ) noexcept
+    {
+        if consteval
+        {
+            return Math::Internal::Exp10Impl( x );
+        }
+        else
+        {
+            T result;
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                _mm_store_ss( &result, _mm_exp10_ps( _mm_set_ss( x ) ) );
+            }
+            else
+            {
+                _mm_store_sd( &result, _mm_exp10_pd( _mm_set_sd( x ) ) );
+            }
+            return result;
+        }
+    }
+
+
+
+
+
+    /// <summary>
+    /// <para>
+    /// Computes the square root of the sum of the squares of x and y, 
+    /// without undue overflow or underflow at intermediate stages of 
+    /// the computation.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <param name="y">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The square root of the sum of the squares of x and y.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Hypot( T x, T y ) noexcept
+    {
+        if consteval
+        {
+            return Math::Internal::OpenLibM::FastHypot( x, y );
+        }
+        else
+        {
+            using Traits = SIMD::Traits<T, 2>;
+
+            auto v = Traits::Set( y, x );
+            v = Traits::Mul( v, v );
+            v = Traits::HSum( v );
+            v = Traits::Sqrt( v );
+            return Traits::First( v );
+        }
+    }
+
+    /// <summary>
+	/// Returns the square root of the sum of the squares of x, y and z.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <param name="y">
+    /// A floating point value.
+    /// </param>
+    /// <param name="z">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The square root of the sum of the squares of x, y and z.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Hypot( T x, T y, T z ) noexcept
+    {
+        if consteval
+        {
+            return Sqrt( x * x + y * y + z * z );
+        }
+        else
+        {
+            using Traits = SIMD::Traits<T, 3>;
+
+            auto v = Traits::Set( z, y, x );
+            v = Traits::Mul( v, v );
+            v = Traits::HSum( v );
+            v = Traits::Sqrt( v );
+            return Traits::First( v );
+
+        }
+    }
+
+    /// <summary>
+    /// <para>
+    /// Computes the natural, base e, logarithm of <c>x</c>.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The natural, base e, logarithm of <c>x</c>.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Log( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Internal::OpenLibM::logf( x );
+        }
+        else
+        {
+            return Internal::OpenLibM::log( x );
+        }
+    }
+
+    /// <summary>
+	/// Returns the natural logarithm of 1 plus x.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The natural logarithm of 1 plus x.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Log1P( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Internal::OpenLibM::log1pf( x );
+        }
+        else
+        {
+            return Internal::OpenLibM::log1p( x );
+        }
+    }
+
+
+
+    /// <summary>
+    /// <para>
+    /// Computes the binary, base-2, logarithm of x.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The binary, base-2, logarithm of x.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Log2( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::log2f( x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::log2( x );
+        }
+    }
+
+
+    /// <summary>
+    /// <para>
+    /// Computes the common, base 10, logarithm of x.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The common, base 10, logarithm of x.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Log10( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::log10f( x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::log10( x );
+        }
+    }
+
+    /// <summary>
+    /// Extracts the value of the unbiased radix-independent exponent 
+    /// from the floating-point argument x, and returns it as a 
+    /// floating-point value.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T LogB( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::logbf( x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::logb( x );
+        }
+    }
+
+    /// <summary>
+    /// Extracts the value of the unbiased exponent from the floating-point 
+    /// argument x, and returns it as a signed integer value.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] int ILogB( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::ilogbf( x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::ilogb( x );
+        }
+    }
+
+
+
+
+
+    /// <summary>
+    /// Computes the value of x raised to the power y.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <param name="y">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// x raised to the power y.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Pow( T x, T y ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::powf( x, y );
+        }
+        else
+        {
+            if consteval
+            {
+                return Math::Internal::OpenLibM::pow( x, y );
+            }
+            else
+            {
+                return std::pow( x, y );
+            }
+        }
+    }
+
+
+
+    /// <summary>
+    /// <para>
+    /// Computes the sine of x given in radians.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The sine of x given in radians.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Sin( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::sinf( x );
+        }
+        else
+        {
+            if consteval
+            {
+                return Math::Internal::OpenLibM::sin( x );
+            }
+            else
+            {
+                return sin( x );
+            }
+        }
+    }
+
+    /// <summary>
+    /// <para>
+    /// Computes the value of the arc sine of x.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The principal value of the arc sine of x.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T ASin( T x ) noexcept
+    {
+        return Math::Internal::OpenLibM::FastASin( x );
+    }
+
+    /// <summary>
+    /// <para>
+    /// Computes the cosine of x given in radians.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The cosine of x given in radians.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Cos( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::cosf( x );
+        }
+        else
+        {
+            if consteval
+            {
+                return Math::Internal::OpenLibM::cos( x );
+            }
+            else
+            {
+                return cos( x );
+            }
+        }
+    }
+
+    /// <summary>
+    /// <para>
+    /// Computes the value of the arc cosine of x.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The principal value of the arc cosine of x.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T ACos( T x ) noexcept
+    {
+        return Math::Internal::OpenLibM::FastACos( x );
+    }
+
+
+    /// <summary>
+    /// <para>
+    /// Computes the tangent of x given in radians.
+    /// </para>
+    /// This implementation can be constexpr evaluated,
+    /// and at runtime calls std::tan.
+    /// <para>
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The tangent of x given in radians.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Tan( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::tanf( x );
+        }
+        else
+        {
+            if consteval
+            {
+                return Math::Internal::OpenLibM::tan( x );
+            }
+            else
+            {
+                return tan( x );
+            }
+        }
+    }
+
+    /// <summary>
+    /// <para>
+    /// Computes the value of the arc tangent of x.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The principal value of the arc tangent of x.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T ATan( T x ) noexcept
+    {
+        if consteval
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return Math::Internal::OpenLibM::atanf( x );
+            }
+            else
+            {
+                return Math::Internal::OpenLibM::atan( x );
+            }
+        }
+        else
+        {
+            return std::atan( x );
+        }
+    }
+
+    /// <summary>
+    /// <para>
+    /// arc tangent of y / x using the signs of arguments to determine the correct quadrant.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="y">
+    /// A floating point value.
+    /// </param>
+    /// <param name="c">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The arc tangent of y / x using the signs of arguments to determine the correct quadrant.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T ATan( T y, T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::atan2f( y, x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::atan2( y, x );
+        }
+    }
+    /// <summary>
+    /// <para>
+    /// The arc tangent of y / x using the signs of arguments to determine the correct quadrant.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="y">
+    /// A floating point value.
+    /// </param>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <returns>
+    /// The arc tangent of y / x using the signs of arguments to determine the correct quadrant.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T ATan2( T y, T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::atan2f( y, x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::atan2( y, x );
+        }
+    }
+
+    /// <summary>
+    /// Simultaneously compute the sine and cosine of x, where x is in radians, 
+    /// returning the sine in the variable referenced by sinResult, and the 
+    /// cosine in the variable referenced by cosResult.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <param name="sinResult"></param>
+    /// <param name="cosResult"></param>
+    template<FloatingPointType T>
+    inline constexpr void SinCos( T x, T& sinResult, T& cosResult ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::sincosf( x, &sinResult, &cosResult );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::sincos( x, &sinResult, &cosResult );
+        }
+    }
+
+    /// <summary>
+    /// Simultaneously compute the sine and cosine of x, where x is in radians, 
+    /// returning the sine in the variable referenced by sinResult, and the 
+    /// cosine in the variable referenced by cosResult.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// A floating point value.
+    /// </param>
+    /// <param name="sinResult"></param>
+    /// <param name="cosResult"></param>
+    template<FloatingPointType T>
+    inline constexpr void SinCos( T x, T* sinResult, T* cosResult ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::sincosf( x, sinResult, cosResult );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::sincos( x, sinResult, cosResult );
+        }
+    }
+
+    /// <summary>
+    /// Calculates the hyperbolic sine of x.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T SinH( T x ) noexcept
+    {
+        if consteval
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return Math::Internal::OpenLibM::sinhf( x );
+            }
+            else
+            {
+                return Math::Internal::OpenLibM::sinh( x );
+            }
+        }
+        else
+        {
+
+            T result;
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                //_mm_store_ss( &result, _mm_sinh_ps( _mm_set_ss( x ) ) );
+                return std::sinh( x );
+            }
+            else
+            {
+                _mm_store_sd( &result, _mm_sinh_pd( _mm_set_sd( x ) ) );
+            }
+            return result;
+        }
+    }
+
+
+    /// <summary>
+    /// Calculates the inverse hyperbolic sine of x.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T ASinH( T x ) noexcept
+    {
+        if consteval
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return Math::Internal::OpenLibM::asinhf( x );
+            }
+            else
+            {
+                return Math::Internal::OpenLibM::asinh( x );
+            }
+        }
+        else
+        {
+            T result;
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                //_mm_store_ss( &result, _mm_asinh_ps( _mm_set_ss( x ) ) );
+                return std::asinh( x );
+            }
+            else
+            {
+                _mm_store_sd( &result, _mm_asinh_pd( _mm_set_sd( x ) ) );
+            }
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// Calculates the hyperbolic cosine of x.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T CosH( T x ) noexcept
+    {
+        if consteval
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return Math::Internal::OpenLibM::coshf( x );
+            }
+            else
+            {
+                return Math::Internal::OpenLibM::cosh( x );
+            }
+        }
+        else
+        {
+
+            T result;
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                //_mm_store_ss( &result, _mm_cosh_ps( _mm_set_ss( x ) ) );
+                return std::cosh( x );
+            }
+            else
+            {
+                _mm_store_sd( &result, _mm_cosh_pd( _mm_set_sd( x ) ) );
+            }
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// Calculates the inverse hyperbolic cosine of x.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T ACosH( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::acoshf( x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::acosh( x );
+        }
+    }
+
+    /// <summary>
+    /// Calculates the hyperbolic tangent of x.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T TanH( T x ) noexcept
+    {
+        if consteval
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return Math::Internal::OpenLibM::tanhf( x );
+            }
+            else
+            {
+                return Math::Internal::OpenLibM::tanh( x );
+            }
+        }
+        else
+        {
+            return std::tanh( x );
+        }
+    }
+
+    /// <summary>
+    /// Calculates the inverse hyperbolic tangent of x.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T ATanH( T x ) noexcept
+    {
+        if consteval
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                return Math::Internal::OpenLibM::atanhf( x );
+            }
+            else
+            {
+                return Math::Internal::OpenLibM::atanh( x );
+            }
+        }
+        else
+        {
+            return std::atanh( x );
+        }
+    }
+
+
+
+
+
+    /// <summary>
+    /// Calculates the Bessel function of the first kind of order 0 for x.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T J0( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::j0f( x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::j0( x );
+        }
+    }
+
+    /// <summary>
+    /// Calculates the Bessel function of the first kind of order 1 for x.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T J1( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::j1f( x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::j1( x );
+        }
+    }
+
+    /// <summary>
+    /// Calculates the Bessel function of the first kind of order n for x.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T JN( int n, T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::jnf( n, x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::jn( n, x );
+        }
+    }
+
+    /// <summary>
+    /// Calculates the Bessel function of the second kind of order 0 for x.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Y0( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::y0f( x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::y0( x );
+        }
+    }
+
+    /// <summary>
+    /// Calculates the Bessel function of the second kind of order 1 for x.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Y1( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::y1f( x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::y1( x );
+        }
+    }
+
+    /// <summary>
+    /// Calculates the Bessel function of the second kind of order n for x.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T YN( int n, T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::ynf( n, x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::yn( n, x );
+        }
+    }
+
+    /// <summary>
+    /// Computes the error function of x
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Erf( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::erff( x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::erf( x );
+        }
+    }
+
+    /// <summary>
+    /// Computes the complementary error function of x,
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T ErfC( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::erfcf( x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::erfc( x );
+        }
+    }
+
+    /// <summary>
+    /// Computes the gamma function of x.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T TGamma( T x ) noexcept
+    {
+        return static_cast< T >( Math::Internal::OpenLibM::tgamma( x ) );
+    }
+
+    /// <summary>
+    /// Computes the natural logarithm of the absolute value of the gamma function of x.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T LGamma( T x ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::lgammaf( x );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::lgamma( x );
+        }
+    }
+
+
+
+    /// <summary>
+    /// Computes the IEEE remainder of the floating point division operation x / y
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Remainder( T x, T y ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::remainderf( x, y );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::remainder( x, y );
+        }
+    }
+
+
+    /// <summary>
+    /// Computes the floating-point remainder of the division operation x / y like Remainder. 
+    /// Additionally, the sign and at least the three of the last bits of x / y will be 
+    /// stored in quo, sufficient to determine the octant of the result within a period.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T RemQuo( T x, T y, int* quo ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::remquof( x, y, quo );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::remquo( x, y, quo );
+        }
+    }
+
+    /// <summary>
+    /// Returns the positive difference between x and y, that is, if x > y, returns x - y, otherwise (i.e. if x <= y) returns +0.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T FDim( T x, T y ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            return Math::Internal::OpenLibM::fdimf( x, y );
+        }
+        else
+        {
+            return Math::Internal::OpenLibM::fdim( x, y );
+        }
+    }
+
+
+
+    /// <summary>
+    /// Computes x * y + z. 
+    /// </summary>
+    template<IntegerType T>
+    constexpr inline [[nodiscard]] T FMA( T a, T b, T c ) noexcept
+    {
+        return a * b + c;
+    }
+
+    namespace Internal
+    {
+
+        // Splitting constant for Veltkamp's algorithm (2^ceil(digits/2) + 1)
+        template <typename T>
+        [[nodiscard]] constexpr T SplitConstant( ) noexcept
+        {
+            if constexpr ( std::is_same_v<T, float> )
+            {
+                // 2^12 + 1
+                return 4097.0f;
+            }
+            else
+            {
+                // 2^27 + 1
+                return 134217729.0;
+            }
+        }
+
+        // Splits a floating-point value into two non-overlapping halves
+        template <typename T>
+        constexpr void Split( T a, T& hi, T& lo ) noexcept
+        {
+            T c = SplitConstant<T>( ) * a;
+            T abigger = c - ( c - a );
+            hi = abigger;
+            lo = a - abigger;
+        }
+
+        // TwoProduct algorithm: Calculates exact product x * y = hi + lo
+        template <typename T>
+        constexpr void TwoProduct( T x, T y, T& hi, T& lo ) noexcept
+        {
+            hi = x * y;
+            T x_hi, x_lo, y_hi, y_lo;
+            Split( x, x_hi, x_lo );
+            Split( y, y_hi, y_lo );
+            lo = x_lo * y_lo - ( ( ( hi - x_hi * y_hi ) - x_lo * y_hi ) - x_hi * y_lo );
+        }
+
+        // TwoSum algorithm: Calculates exact sum a + b = hi + lo (assuming |a| >= |b|)
+        template <typename T>
+        constexpr void TwoSumOrdered( T a, T b, T& hi, T& lo ) noexcept
+        {
+            hi = a + b;
+            lo = b - ( hi - a );
+        }
+
+    }
+
+
+    /// <summary>
+    /// Computes x * y + z as if to infinite precision and rounded only once to fit the result type.
+    /// </summary>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T FMA( T x, T y, T z ) noexcept
+    {
+        if consteval
+        {
+            // Infinities, NaNs, and Zeros
+            if ( IsNaN( x ) || IsNaN( y ) || IsNaN( z ) )
+            {
+                return std::numeric_limits<T>::quiet_NaN( );
+            }
+            if ( ( IsInf( x ) && y == 0.0 ) || ( x == 0.0 && IsInf( y ) ) ) 
+            {
+                return std::numeric_limits<T>::quiet_NaN( );
+            }
+            if ( IsInf( x ) || IsInf( y ) || IsInf( z ) )
+            {
+                return ( x * y ) + z;
+            }
+
+            // FMA emulation using Dekker-Veltkamp multiplication algorithm:
+            T prodHi, prodLo;
+            Internal::TwoProduct( x, y, prodHi, prodLo );
+
+            T sumHi, sumLo;
+            if ( Abs( prodHi ) >= Abs( z ) )
+            {
+                Internal::TwoSumOrdered( prodHi, z, sumHi, sumLo );
+            }
+            else
+            {
+                Internal::TwoSumOrdered( z, prodHi, sumHi, sumLo );
+            }
+            return sumHi + ( sumLo + prodLo );
+        }
+        else
+        {
+            return std::fma( x, y, z );
+        }
+    }
+
+
+    /// <summary>
+	/// Returns the sine of x divided by x.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="x"></param>
+    /// <returns></returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T SinXOverX( T x )
+    {
+        if ( 1 - x * x == 1 )
+        {
+            return 1;
+        }
+        return Math::Sin( x ) / x;
+    }
+
+    /// <summary>
+	/// Returns the normalized sinc function of x.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="x"></param>
+    /// <returns></returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Sinc( T x )
+    {
+        return SinXOverX( Constants<T>::Pi * x );
+    }
+
+    /// <summary>
+	/// Returns the windowed sinc function of x.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">x</param>
+    /// <param name="radius">cutoff radius</param>
+    /// <param name="tau">windowing parameter</param>
+    /// <returns>
+    /// The windowed sinc function of x.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T WindowedSinc( T x, T radius, T tau )
+    {
+        if ( Abs( x ) > radius )
+        {
+            return 0;
+        }
+        return Sinc( x ) * Sinc( x / tau );
+    }
+
+    /// <summary>
+	/// Returns the floating-point remainder of a divided by b.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="a">
+    /// The dividend.
+    /// </param>
+    /// <param name="b">The divisor.</param>
+    /// <returns>The floating-point remainder of a divided by b.</returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Mod( T a, T b )
+    {
+        return FMod( a, b );
+    }
+
+    /// <summary>
+	/// Converts degrees to radians.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="deg">
+    /// The angle in degrees.
+    /// </param>
+    /// <returns>
+    /// The angle in radians.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Radians( T deg )
+    {
+        return ( Constants<T>::Pi / static_cast < T >( 180 ) ) * deg;
+    }
+
+    /// <summary>
+	/// Converts radians to degrees.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="rad">
+    /// The angle in radians.
+    /// </param>
+    /// <returns>The angle in degrees.</returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Degrees( T rad )
+    {
+        return ( static_cast< T >( 180 ) / Constants<T>::Pi ) * rad;
+    }
+
+    /// <summary>
+    /// The SmoothStep function creates a smooth, S-shaped curve (sigmoid) 
+    /// for transitions, commonly used in computer graphics to smoothly 
+    /// blend between two values (0 and 1) over a specified range, ensuring 
+    /// the curve starts and ends flat (zero slope) for a natural, gradual 
+    /// acceleration and deceleration.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="x">
+    /// The input value.
+    /// </param>
+    /// <param name="a">
+    /// The lower bound.
+    /// </param>
+    /// <param name="b">
+    /// The upper bound.
+    /// </param>
+    /// <returns>
+    /// The interpolated value.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T SmoothStep( T x, T a, T b )
+    {
+        if ( a == b )
+        {
+            return x < a ? Constants<T>::Zero : Constants<T>::One;
+        }
+        T t = Clamp( ( x - a ) / ( b - a ), Constants<T>::Zero, Constants<T>::One );
+        return t * t * ( Constants<T>::Three - Constants<T>::Two * t );
+    }
+
+    /// <summary>
+	/// Calculates the square root of x, ensuring 
+    /// that the input is non-negative.
+    /// </summary>
+    /// <typeparam name="T">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// The value to calculate the square root of.
+    /// </param>
+    /// <returns>
+    /// The square root of the input value, or zero if the input is negative.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T SafeSqrt( T x )
+    {
+        return Sqrt( std::max( Constants<T>::Zero, x ) );
+    }
+
+    namespace Internal
+    {
+        template<typename T>
+        inline constexpr bool IsComplex = std::is_same_v<std::remove_cvref_t<T>, std::complex<float>> || std::is_same_v<std::remove_cvref_t<T>, std::complex<double>>;
+    }
+
+    /// <summary>
+	/// Calculates the square of a value.
+    /// </summary>
+    /// <typeparam name="T">
+	/// A numeric type.
+    /// </typeparam>
+    /// <param name="v">
+	/// The value to square.
+    /// </param>
+    /// <returns>
+	/// The square of the input value.
+    /// </returns>
+    template<typename T>
+        requires IsArithmetic<T> || Internal::IsComplex<T>
+    constexpr inline [[nodiscard]] T Sqr( T v )
+    {
+        return v * v;
+    }
+
+
+    namespace Internal
+    {
+        template<FloatingPointType FloatT>
+        struct FastPowImpl
+        {
+            template<int n> 
+            static constexpr inline [[nodiscard]] FloatT Pow( FloatT v )
+            {
+                if constexpr ( n == 0 )
+                {
+                    return Constants<FloatT>::One;
+                }
+                else if constexpr ( n == 1 )
+                {
+                    return v;
+                }
+                else if constexpr ( n < 0 )
+                {
+                    return Constants<FloatT>::One / Pow<-n>( v );
+                }
+                else 
+                { 
+                    auto n2 = Pow<n / 2>( v ); 
+                    return n2 * n2 * Pow<n & 1>( v ); 
+                }
+            }
+        };
+    }
+
+    /// <summary>
+	/// Calculates v raised to the power of n using exponentiation by squaring.
+    /// </summary>
+    /// <typeparam name="n">
+    /// The exponent.
+    /// </typeparam>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="v">
+    /// The value to raise to the power of n.
+    /// </param>
+    /// <returns>
+    /// The result of v raised to the power of n.
+    /// </returns>
+    template<int n, FloatingPointType T>
+    constexpr inline [[nodiscard]] T FastPow( T v )
+    {
+        return Internal::FastPowImpl<T>::Pow<n>( v );
+    }
+
+
+    /// <summary>
+	/// Recursively evaluates a polynomial at a given point t using Horner's method.
+    /// </summary>
+    /// <typeparam name="T">
+	/// The type of the input value.
+    /// </typeparam>
+    /// <typeparam name="C">
+	/// The type of the constant term.
+    /// </typeparam>
+    /// <param name="t">
+	/// The value to evaluate the polynomial at.
+    /// </param>
+    /// <param name="c">
+	/// The constant term.
+    /// </param>
+    /// <returns>
+    /// The result of the polynomial evaluation.
+    /// </returns>
+    template <ArithmeticType T, ArithmeticType C>
+    constexpr inline [[nodiscard]] T EvaluatePolynomial( T t, C c )
+    {
+        return c;
+    }
+
+    /// <summary>
+	/// Recursively evaluates a polynomial at a given point t using Horner's method.
+    /// </summary>
+    /// <typeparam name="T">
+	/// The type of the input value.
+    /// </typeparam>
+    /// <typeparam name="C">
+	/// The type of the constant term.
+    /// </typeparam>
+    /// <typeparam name="...Args">
+	/// The types of the remaining coefficients.
+    /// </typeparam>
+    /// <param name="t">
+	/// The value to evaluate the polynomial at.
+    /// </param>
+    /// <param name="c">
+	/// The constant term.
+    /// </param>
+    /// <param name="...remaining">
+	/// The remaining coefficients.
+    /// </param>
+    /// <returns>
+	/// The result of the polynomial evaluation.
+    /// </returns>
+    template <ArithmeticType T, ArithmeticType C, ArithmeticType ... Args>
+    constexpr inline [[nodiscard]] T EvaluatePolynomial( T t, C c, Args... remaining )
+    {
+        return FMA( t, EvaluatePolynomial( t, remaining... ), c );
+    }
+
+    /// <summary>
+	/// Returns the arc sine of x, clamping the input to the valid range of -1 to 1.
+    /// </summary>
+    /// <typeparam name="T">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// The value to compute the arc sine of.
+    /// </param>
+    /// <returns>
+    /// The arc sine of the clamped input.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T SafeASin( T x )
+    {
+        return ASin( Clamp( x, Constants< T >::MinusOne, Constants< T >::One ) );
+    }
+
+    /// <summary>
+	/// Returns the arc cosine of x, clamping the input to the valid range of -1 to 1.
+    /// </summary>
+    /// <typeparam name="T">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// The value to compute the arc cosine of.
+    /// </param>
+    /// <returns>
+    /// The arc cosine of the clamped input.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T SafeACos( T x )
+    {
+        return ACos( Clamp( x, Constants< T >::MinusOne, Constants< T >::One ) );
+    }
+
+    /// <summary>
+	/// Returns the next representable floating-point value greater than v.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="v">
+    /// The value to compute the next representable floating-point value for.
+    /// </param>
+    /// <returns>
+    /// The next representable floating-point value greater than v.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T NextFloatUp( T v )
+    {
+        return NextUp( v );
+    }
+
+    /// <summary>
+	/// Returns the next representable floating-point value less than v.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="v">
+    /// The value to compute the next representable floating-point value for.
+    /// </param>
+    /// <returns>
+    /// The next representable floating-point value less than v.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T NextFloatDown( T v )
+    {
+        return NextDown( v );
+    }
+
+    /// <summary>
+	/// Returns the gamma function value for n, which estimates the maximum relative error.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="n">
+    /// The integer value to compute the gamma function for.
+    /// </param>
+    /// <returns>
+    /// The gamma function value for n.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T Gamma( int n )
+    {
+        return ( static_cast< T >( n ) * Constants<T>::MachineEpsilon ) / ( Constants< T >::One - static_cast< T >( n ) * Constants<T>::MachineEpsilon );
+    }
+
+    /// <summary>
+	/// Returns the result of addition, adjusted upwards to account for floating-point precision errors.
+    /// </summary>
+    /// <typeparam name="T">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="a">
+    /// The first value to add.
+    /// </param>
+    /// <param name="b">
+    /// The second value to add.
+    /// </param>
+    /// <returns>
+    /// The adjusted result of the addition.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T AddAdjustUp( T a, T b )
+    {
+        return NextUp( a + b );
+    }
+
+    /// <summary>
+	/// Returns the result of addition, adjusted downwards to account for floating-point precision errors.
+    /// </summary>
+    /// <typeparam name="T">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The first value to add.
+    /// </param>
+    /// <param name="b">
+	/// The second value to add.
+    /// </param>
+    /// <returns>
+	/// The adjusted result of the addition.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T AddAdjustDown( T a, T b )
+    {
+        return NextDown( a + b );
+    }
+
+    /// <summary>
+	/// Returns the result of subtraction, adjusted upwards to account for floating-point precision errors.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="a">
+    /// The first value to subtract.
+    /// </param>
+    /// <param name="b">
+    /// The second value to subtract.
+    /// </param>
+    /// <returns>
+    /// The adjusted result of the subtraction.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T SubAdjustUp( T a, T b )
+    {
+        return AddAdjustUp( a, -b );
+    }
+
+    /// <summary>
+	/// Returns the result of subtraction, adjusted downwards to account for floating-point precision errors.
+    /// </summary>
+    /// <typeparam name="T">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The first value to subtract.
+    /// </param>
+    /// <param name="b">
+	/// The second value to subtract.
+    /// </param>
+    /// <returns>
+	/// The adjusted result of the subtraction.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T SubAdjustDown( T a, T b )
+    {
+        return AddAdjustDown( a, -b );
+    }
+
+    /// <summary>
+	/// Returns the result of multiplication, adjusted upwards to account for floating-point precision errors.
+    /// </summary>
+    /// <typeparam name="T">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The first value to multiply.
+    /// </param>
+    /// <param name="b">
+	/// The second value to multiply.
+    /// </param>
+    /// <returns>
+	/// The adjusted result of the multiplication.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T MulAdjustUp( T a, T b )
+    {
+        return NextUp( a * b );
+    }
+
+    /// <summary>
+	/// Returns the result of multiplication, adjusted downwards to account for floating-point precision errors.
+    /// </summary>
+    /// <typeparam name="T">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The first value to multiply.
+    /// </param>
+    /// <param name="b">
+	/// The second value to multiply.
+    /// </param>
+    /// <returns>
+	/// The adjusted result of the multiplication.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T MulAdjustDown( T a, T b )
+    {
+        return NextDown( a * b );
+    }
+
+    /// <summary>
+	/// Returns the result of division, adjusted upwards to account for floating-point precision errors.
+    /// </summary>
+    /// <typeparam name="T">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The numerator.
+    /// </param>
+    /// <param name="b">
+	/// The denominator.
+    /// </param>
+    /// <returns>
+	/// The adjusted result of the division.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T DivAdjustUp( T a, T b )
+    {
+        return NextUp( a / b );
+    }
+
+    /// <summary>
+	/// Returns the result of division, adjusted downwards to account for floating-point precision errors.
+    /// </summary>
+    /// <typeparam name="T">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The numerator.
+    /// </param>
+    /// <param name="b">
+	/// The denominator.
+    /// </param>
+    /// <returns>
+	/// The adjusted result of the division.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T DivAdjustDown( T a, T b )
+    {
+        return NextDown( a / b );
+    }
+
+    /// <summary>
+	/// Returns the square root of a, adjusted upwards to account for floating-point precision errors.
+    /// </summary>
+    /// <typeparam name="T">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The value to compute the square root of.
+    /// </param>
+    /// <returns>
+	/// The adjusted result of the square root.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T SqrtAdjustUp( T a )
+    {
+        return NextUp( Sqrt( a ) );
+    }
+
+    /// <summary>
+	/// Returns the square root of a, adjusted downwards to account for floating-point precision errors.
+    /// </summary>
+    /// <typeparam name="T">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The value to compute the square root of.
+    /// </param>
+    /// <returns>
+	/// The adjusted result of the square root.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T SqrtAdjustDown( T a )
+    {
+        return std::max<T>( 0, NextDown( Sqrt( a ) ) );
+    }
+
+    /// <summary>
+	/// Returns the result of fused multiply-add, adjusted upwards to account for floating-point precision errors.
+    /// </summary>
+    /// <typeparam name="T">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The first value to multiply.
+    /// </param>
+    /// <param name="b">
+	/// The second value to multiply.
+    /// </param>
+    /// <param name="c">
+	/// The value to add.
+    /// </param>
+    /// <returns></returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T FMAAdjustUp( T a, T b, T c )
+    {
+        return NextUp( FMA( a, b, c ) );
+    }
+
+    /// <summary>
+	/// Returns the result of fused multiply-add, adjusted downwards to account for floating-point precision errors.
+    /// </summary>
+    /// <typeparam name="T">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The first value to multiply.
+    /// </param>
+    /// <param name="b">
+	/// The second value to multiply.
+    /// </param>
+    /// <param name="c">
+	/// The value to add.
+    /// </param>
+    /// <returns>
+    /// The adjusted result of the fused multiply-add.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T FMAAdjustDown( T a, T b, T c )
+    {
+        return NextDown( FMA( a, b, c ) );
+    }
+
+    /// <summary>
+	/// Returns the base-2 logarithm of x.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// The value to compute the logarithm of.
+    /// </param>
+    /// <returns>
+    /// The base-2 logarithm of x.
+    /// </returns>
+    template<FloatingPointType T>
+    constexpr inline [[nodiscard]] T FastLog2( T x )
+    {
+        return Log2( x );
+    }
+
+    /// <summary>
+	/// Returns the integer part of the base-2 logarithm of v.
+    /// </summary>
+    /// <param name="v">
+    /// The value to compute the logarithm of.
+    /// </param>
+    /// <returns>
+    /// The integer part of the base-2 logarithm of v.
+    /// </returns>
+    constexpr inline [[nodiscard]] int Log2Int( float v )
+    {
+        if ( v < 1.f )
+        {
+            return -Log2Int( 1.f / v );
+        }
+        else
+        {
+            constexpr UInt32 midSignificand = 0b00000000001101010000010011110011;
+            return Common::Exponent( v ) + ( ( Common::Significand( v ) >= midSignificand ) ? 1 : 0 );
+        }
+    }
+
+    /// <summary>
+	/// Returns the integer part of the base-2 logarithm of v.
+    /// </summary>
+    /// <param name="v">
+    /// The value to compute the logarithm of.
+    /// </param>
+    /// <returns>
+    /// The integer part of the base-2 logarithm of v.
+    /// </returns>
+    constexpr inline [[nodiscard]] int Log2Int( double v )
+    {
+        if ( v < 1. )
+        {
+            return -Log2Int( 1. / v );
+        }
+        else
+        {
+            constexpr UInt64 midSignificand = 0b110101000001001111001100110011111110011101111001101;
+            return Common::Exponent( v ) + ( ( Common::Significand( v ) >= midSignificand ) ? 1 : 0 );
+        }
+    }
+
+    /// <summary>
+	/// Returns the integer part of the base-2 logarithm of v.
+    /// </summary>
+    /// <param name="v">
+    /// The value to compute the logarithm of.
+    /// </param>
+    /// <returns>
+    /// The integer part of the base-2 logarithm of v.
+    /// </returns>
+    constexpr inline [[nodiscard]] int Log2Int( UInt32 v )
+    {
+        unsigned long index = 0;
+        if ( IndexOfBitFromMSB( &index, v ) )
+        {
+            return std::bit_cast< int >( index );
+        }
+        return 0;
+    }
+
+    /// <summary>
+	/// Returns the integer part of the base-2 logarithm of v.
+    /// </summary>
+    /// <param name="v">
+    /// The value to compute the logarithm of.
+    /// </param>
+    /// <returns>
+    /// The integer part of the base-2 logarithm of v.
+    /// </returns>
+    constexpr inline [[nodiscard]] int Log2Int( Int32 v )
+    {
+        return Log2Int( std::bit_cast< UInt32 >( v ) );
+    }
+
+    /// <summary>
+	/// Returns the integer part of the base-2 logarithm of v.
+    /// </summary>
+    /// <param name="v">
+    /// The value to compute the logarithm of.
+    /// </param>
+    /// <returns>
+    /// The integer part of the base-2 logarithm of v.
+    /// </returns>
+    constexpr inline [[nodiscard]] int Log2Int( UInt64 v )
+    {
+        unsigned long index = 0;
+        IndexOfBitFromMSB( &index, v );
+        return std::bit_cast< int >( index );
+    }
+
+    /// <summary>
+	/// Returns the integer part of the base-2 logarithm of v.
+    /// </summary>
+    /// <param name="v">
+    /// The value to compute the logarithm of.
+    /// </param>
+    /// <returns>
+    /// The integer part of the base-2 logarithm of v.
+    /// </returns>
+    constexpr inline [[nodiscard]] int Log2Int( Int64 v )
+    {
+        return Log2Int( std::bit_cast< UInt64 >( v ) );
+    }
+
+    /// <summary>
+	/// Returns the integer part of the base-4 logarithm of v.  
+    /// </summary>
+    /// <typeparam name="T">
+    /// The type of the value to compute the logarithm of.
+    /// </typeparam>
+    /// <param name="v">
+    /// The value to compute the logarithm of.
+    /// </param>
+    /// <returns>
+    /// The integer part of the base-4 logarithm of v.
+    /// </returns>
+    template <ArithmeticType T>
+    constexpr inline [[nodiscard]] int Log4Int( T v )
+    {
+        return Log2Int( v ) / 2;
+    }
+
+    // https://stackoverflow.com/a/10792321
+    
+    /// <summary>
+	/// Returns an efficient approximation of the exponential function e^x.
+    /// </summary>
+    /// <param name="x">
+    /// The exponent to raise e to.
+    /// </param>
+    /// <returns>
+    /// An efficient approximation of the exponential function e^x.
+    /// </returns>
+    constexpr inline [[nodiscard]] float FastExp( float x )
+    {
+        // Compute $x'$ such that $\roman{e}^x = 2^{x'}$
+        float xp = x * 1.442695041f;
+
+        // Find integer and fractional components of $x'$
+        float fxp = Floor( xp ), f = xp - fxp;
+        auto i = static_cast< int >( fxp );
+
+        // Evaluate polynomial approximation of $2^f$
+        float twoToF = EvaluatePolynomial( f, 1.f, 0.695556856f, 0.226173572f, 0.0781455737f );
+
+        // Scale $2^f$ by $2^i$ and return final result
+        int exponent = Common::Exponent( twoToF ) + i;
+        if ( exponent < -126 )
+        {
+            return 0;
+        }
+        if ( exponent > 127 )
+        {
+            return Constants<float>::Infinity;
+        }
+        auto bits = std::bit_cast< UInt32 >( twoToF );
+        bits &= 0b10000000011111111111111111111111u;
+        bits |= ( exponent + 127 ) << 23;
+        return std::bit_cast< float >( bits );
+    }
+
+    /// <summary>
+	/// Returns the value of the Gaussian (normal) distribution's probability density function at point x.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// The point at which to evaluate the PDF.
+    /// </param>
+    /// <param name="mu">
+    /// The mean of the distribution.
+    /// </param>
+    /// <param name="sigma">
+    /// The standard deviation of the distribution.
+    /// </param>
+    /// <returns>
+    /// The value of the PDF at point x.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    constexpr inline [[nodiscard]] FloatT Gaussian( FloatT x, FloatT mu = 0, FloatT sigma = 1 )
+    {
+        if constexpr (std::is_same_v<FloatT, float>)
+        {
+            return static_cast< FloatT >( 1 ) / Sqrt( static_cast< FloatT >( 2 ) * Constants<FloatT>::Pi * sigma * sigma ) *
+                FastExp( -Sqr( x - mu ) / ( static_cast< FloatT >( 2 ) * sigma * sigma ) );
+        }
+        else
+        {
+            return static_cast< FloatT >( 1 ) / Sqrt( static_cast< FloatT >( 2 ) * Constants<FloatT>::Pi * sigma * sigma ) *
+                Exp( -Sqr( x - mu ) / ( static_cast< FloatT >( 2 ) * sigma * sigma ) );
+        }
+    }
+
+    /// <summary>
+	/// Returns the integral of the Gaussian (normal) distribution's probability density function between x0 and x1.
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x0">
+    /// The lower bound of the integral.
+    /// </param>
+    /// <param name="x1">
+    /// The upper bound of the integral.
+    /// </param>
+    /// <param name="mu">
+    /// The mean of the distribution.
+    /// </param>
+    /// <param name="sigma">
+    /// The standard deviation of the distribution.
+    /// </param>
+    /// <returns>
+    /// The value of the integral of the PDF between x0 and x1.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    constexpr inline [[nodiscard]] FloatT GaussianIntegral( FloatT x0, FloatT x1, FloatT mu = 0, FloatT sigma = 1 )
+    {
+        FloatT sigmaRoot2 = sigma * Constants<FloatT>::Sqrt2;
+        return static_cast< FloatT >( 0.5 ) * ( std::erf( ( mu - x0 ) / sigmaRoot2 ) - std::erf( ( mu - x1 ) / sigmaRoot2 ) );
+    }
+
+    /// <summary>
+	/// Returns the value of the Logistic distribution's probability density function at point x.
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// The point at which to evaluate the PDF.
+    /// </param>
+    /// <param name="s">
+    /// The scale parameter of the distribution.
+    /// </param>
+    /// <returns>
+    /// The value of the PDF at point x.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    constexpr inline [[nodiscard]] FloatT Logistic( FloatT x, FloatT s )
+    {
+        x = Abs( x );
+        return Exp( -x / s ) / ( s * Sqr( 1 + Exp( -x / s ) ) );
+    }
+
+    /// <summary>
+	/// Returns the cumulative distribution function (CDF) of the Logistic distribution at point x.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// The point at which to evaluate the CDF.
+    /// </param>
+    /// <param name="s">
+    /// The scale parameter of the distribution.
+    /// </param>
+    /// <returns>
+    /// The value of the CDF at point x.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    constexpr inline [[nodiscard]] FloatT LogisticCDF( FloatT x, FloatT s )
+    {
+        return static_cast< FloatT >( 1 ) / ( static_cast< FloatT >( 1 ) + Exp( -x / s ) );
+    }
+
+    /// <summary>
+	/// Returns the value of the trimmed Logistic distribution's probability density function at point x.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating point type.
+    /// </typeparam>
+    /// <param name="x">
+    /// The point at which to evaluate the PDF.
+    /// </param>
+    /// <param name="s">
+    /// The scale parameter of the distribution.
+    /// </param>
+    /// <param name="a">
+    /// The lower bound of the trimming interval.
+    /// </param>
+    /// <param name="b">
+    /// The upper bound of the trimming interval.
+    /// </param>
+    /// <returns>
+    /// The value of the trimmed PDF at point x.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    constexpr inline [[nodiscard]] FloatT TrimmedLogistic( FloatT x, FloatT s, FloatT a, FloatT b )
+    {
+        return Logistic( x, s ) / ( LogisticCDF( b, s ) - LogisticCDF( a, s ) );
+    }
+
+    template<FloatingPointType FloatT>
+    constexpr inline FloatT ErfInv( FloatT a );
+    template<FloatingPointType FloatT>
+    constexpr inline FloatT I0( FloatT x );
+    template<FloatingPointType FloatT>
+    constexpr inline FloatT LogI0( FloatT x );
+
+    /// <summary>
+	/// Returns the largest index i in the range [0, sz-2] such that pred(i) is true.
+    /// </summary>
+    /// <typeparam name="Predicate">
+    /// A callable type that takes an index and returns a boolean.
+    /// </typeparam>
+    /// <param name="sz">
+    /// The size of the range to search.
+    /// </param>
+    /// <param name="pred">
+    /// A callable type that takes an index and returns a boolean.
+    /// </param>
+    /// <returns>
+    /// The largest index i in the range [0, sz-2] such that pred(i) is true.
+    /// </returns>
+    template<typename Predicate>
+        requires std::is_invocable_r_v<bool, Predicate, size_t>
+    constexpr inline [[nodiscard]] size_t FindInterval( size_t sz, const Predicate& pred )
+    {
+        using ssize_t = std::make_signed_t<size_t>;
+        ssize_t size = static_cast<ssize_t>( sz ) - 2; 
+        ssize_t first = 1;
+        while ( size > 0 )
+        {
+            // Evaluate predicate at midpoint and update _first_ and _size_
+            size_t half = static_cast<size_t>( size ) >> 1; 
+            size_t middle = static_cast<size_t>( first ) + half;
+            bool predResult = pred( middle );
+            first = predResult ? static_cast<ssize_t>( middle + 1 ) : first;
+            size = predResult ? size - ( static_cast<ssize_t>( half + 1 ) ) : static_cast<ssize_t>( half );
+        }
+        return static_cast<size_t>( Clamp( static_cast<ssize_t>(first) - 1, static_cast<ssize_t>(0), static_cast<ssize_t>(sz) - 2 ) );
+    }
+
+    /// <summary>
+	/// Returns true if v is a power of 4.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A numeric type.
+    /// </typeparam>
+    /// <param name="v">
+    /// A numeric value.
+    /// </param>
+    /// <returns>
+    /// Returns true if v is a power of 4.
+    /// </returns>
+    template <typename T>
+    constexpr inline [[nodiscard]] bool IsPowerOf4( T v )
+    {
+        return v == ( static_cast< T >( 1 ) << ( 2 * Log4Int( v ) ) );
+    }
+
+    /// <summary>
+	/// Returns v rounded up to the next power of 2.
+    /// </summary>
+    /// <param name="v">
+    /// A numeric value.
+    /// </param>
+    /// <returns>
+    /// Returns v rounded up to the next power of 2.
+    /// </returns>
+    constexpr inline [[nodiscard]] Int32 RoundUpPow2( Int32 v )
+    {
+        return NextPowerOfTwo( v );
+    }
+
+    /// <summary>
+	/// Returns v rounded up to the next power of 2.
+    /// </summary>
+    /// <param name="v">
+    /// A numeric value.
+    /// </param>
+    /// <returns>
+    /// Returns v rounded up to the next power of 2.
+    /// </returns>
+    constexpr inline [[nodiscard]] Int64 RoundUpPow2( Int64 v )
+    {
+        return NextPowerOfTwo( v );
+    }
+
+    /// <summary>
+	/// Returns v rounded up to the next power of 4.
+    /// </summary>
+    /// <typeparam name="T">
+    /// A numeric type.
+    /// </typeparam>
+    /// <param name="v">
+    /// A numeric value.
+    /// </param>
+    /// <returns>
+    /// Returns v rounded up to the next power of 4.
+    /// </returns>
+    template <typename T>
+    constexpr inline [[nodiscard]] T RoundUpPow4( T v )
+    {
+        return IsPowerOf4( v ) ? v : ( static_cast< T >( 1 ) << ( 2 * ( 1 + Log4Int( v ) ) ) );
+    }
+
+    /// <summary>
+    /// <para>
+    /// Implements the Kahan summation algorithm, also known as compensated 
+    /// summation, significantly reducing the numerical error when adding a 
+    /// sequence of finite-precision floating-point numbers. The algorithm 
+    /// achieves this by tracking and compensating for the small rounding errors 
+    /// that occur during each addition, which would otherwise accumulate in 
+    /// the standard summation approach. 
+    /// </para>
+    /// <para>
+    /// The standard algorithm for summing numbers in sequence can lead to 
+    /// substantial errors when a large number is added to a small number, 
+    /// causing the smaller number's significant digits to be lost due to 
+    /// the limits of floating-point representation. 
+    /// The Kahan algorithm minimizes this loss of precision. 
+    /// </para>
+    /// </summary>
+    /// <typeparam name="T">
+    /// A floating-point type.
+    /// </typeparam>
+    template<FloatingPointType T>
+    class CompensatedSum
+    {
+    public:
+        using value_type = T;
+        using ValueType = T;
+    private:
+        ValueType sum_ = 0;
+        ValueType c_ = 0;
+    public:
+        /// <summary>
+		/// Default constructor for CompensatedSum.
+        /// </summary>
+        constexpr CompensatedSum( ) noexcept = default;
+
+        /// <summary>
+		/// Constructor for CompensatedSum that initializes the sum with a given value.
+        /// </summary>
+        /// <param name="v">
+        /// A numeric value.
+        /// </param>
+        constexpr explicit CompensatedSum( ValueType v ) noexcept
+            : sum_( v )
+        {
+        }
+
+        /// <summary>
+		/// Resets the compensated sum to a given value.
+        /// </summary>
+        /// <param name="v">
+        /// A numeric value.
+        /// </param>
+        /// <returns>
+        /// Returns a reference to this instance.
+        /// </returns>
+        constexpr CompensatedSum& operator=( ValueType v ) noexcept
+        {
+            sum_ = v;
+            c_ = 0;
+            return *this;
+        }
+
+        /// <summary>
+		/// Adds a value to the compensated sum using Kahan summation algorithm.
+        /// </summary>
+        /// <param name="v">
+        /// A numeric value.
+        /// </param>
+        /// <returns>
+        /// Returns a reference to this instance.
+        /// </returns>
+        constexpr CompensatedSum& operator+=( ValueType v ) noexcept
+        {
+            ValueType delta = v - c_;
+            ValueType newSum = sum_ + delta;
+            c_ = ( newSum - sum_ ) - delta;
+            sum_ = newSum;
+            return *this;
+        }
+
+        constexpr explicit [[nodiscard]] operator ValueType( ) const noexcept
+        {
+            return sum_;
+        }
+
+        constexpr [[nodiscard]] std::string ToString( ) const;
+
+    private:
+
+    };
+
+    // CompensatedFloat Definition
+
+
+    /// <summary>
+    /// CompensatedFloat is designed to perform high-precision floating-point arithmetic 
+    /// using techniques that compensate for the inherent precision loss of standard float 
+    /// (single-precision) or double (double-precision) types. This is useful in scientific, 
+    /// financial, or graphics applications where accumulated rounding errors can 
+    /// significantly affect the final result. 
+    /// </summary>
+    /// <typeparam name="T">
+	/// A floating-point type.
+    /// </typeparam>
+    template<FloatingPointType T>
+    class CompensatedFloat
+    {
+    public:
+        using value_type = T;
+        using ValueType = T;
+
+        ValueType v{};
+        ValueType err{};
+
+    public:
+        // CompensatedFloat Public Methods
+        constexpr CompensatedFloat( ValueType v, ValueType err = 0 ) noexcept
+            : v( v ), err( err )
+        {
+        }
+        constexpr explicit [[nodiscard]] operator float( ) const noexcept
+        {
+            return float( v ) + float( err );
+        }
+        constexpr explicit [[nodiscard]] operator double( ) const noexcept
+        {
+            return double( v ) + double( err );
+        }
+        constexpr [[nodiscard]] std::string ToString( ) const;
+    };
+
+
+    /// <summary>
+	/// Returns the product of a and b along with the rounding error.
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// A floating-point type.
+    /// </typeparam>
+    /// <param name="a">
+    /// A numeric value.
+    /// </param>
+    /// <param name="b">
+    /// A numeric value.
+    /// </param>
+    /// <returns>
+    /// A compensated float representing the product of a and b.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    constexpr inline [[nodiscard]] CompensatedFloat<FloatT> TwoProd( FloatT a, FloatT b )
+    {
+        FloatT ab = a * b;
+        return { ab, FMA( a, b, -ab ) };
+    }
+
+    /// <summary>
+	/// Returns the sum of a and b along with the rounding error.
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// A floating-point type.
+    /// </typeparam>
+    /// <param name="a">
+    /// A numeric value.
+    /// </param>
+    /// <param name="b">
+    /// A numeric value.
+    /// </param>
+    /// <returns>
+    /// A compensated float representing the sum of a and b.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    constexpr inline [[nodiscard]] CompensatedFloat<FloatT> TwoSum( FloatT a, FloatT b )
+    {
+        FloatT s = a + b, delta = s - a;
+        return { s, ( a - ( s - delta ) ) + ( b - delta ) };
+    }
+
+    /// <summary>
+	/// Returns the difference of products a*b - c*d with reduced floating-point error.
+    /// </summary>
+    /// <typeparam name="Ta">
+	/// An arithmetic type.
+    /// </typeparam>
+    /// <typeparam name="Tb">
+	/// An arithmetic type.
+    /// </typeparam>
+    /// <typeparam name="Tc">
+	/// An arithmetic type.
+    /// </typeparam>
+    /// <typeparam name="Td">
+	/// An arithmetic type.
+    /// </typeparam>
+    /// <param name="a">
+    /// A numeric value.
+    /// </param>
+    /// <param name="b">
+    /// A numeric value.
+    /// </param>
+    /// <param name="c">
+    /// A numeric value.
+    /// </param>
+    /// <param name="d">
+    /// A numeric value.
+    /// </param>
+    /// <returns>
+    /// A compensated float representing the difference of products a*b - c*d.
+    /// </returns>
+    template <FloatingPointType Ta, FloatingPointType Tb, FloatingPointType Tc, FloatingPointType Td>
+    constexpr inline [[nodiscard]] auto DifferenceOfProducts( Ta a, Tb b, Tc c, Td d )
+    {
+        auto cd = c * d;
+        auto differenceOfProducts = FMA( a, b, -cd );
+        auto error = FMA( -c, d, cd );
+        return differenceOfProducts + error;
+    }
+
+    /// <summary>
+	/// Returns the sum of products a*b + c*d with reduced floating-point error.
+    /// </summary>
+    /// <typeparam name="Ta">
+    /// An arithmetic type.
+    /// </typeparam>
+    /// <typeparam name="Tb">
+    /// An arithmetic type.
+    /// </typeparam>
+    /// <typeparam name="Tc">
+    /// An arithmetic type.
+    /// </typeparam>
+    /// <typeparam name="Td">
+    /// An arithmetic type.
+    /// </typeparam>
+    /// <param name="a">
+    /// A numeric value.
+    /// </param>
+    /// <param name="b">
+    /// A numeric value.
+    /// </param>
+    /// <param name="c">
+    /// A numeric value.
+    /// </param>
+    /// <param name="d">
+    /// A numeric value.
+    /// </param>
+    /// <returns>
+    /// A compensated float representing the sum of products a*b + c*d.
+    /// </returns>
+    template <FloatingPointType Ta, FloatingPointType Tb, FloatingPointType Tc, FloatingPointType Td>
+    constexpr inline [[nodiscard]] auto SumOfProducts( Ta a, Tb b, Tc c, Td d )
+    {
+        auto cd = c * d;
+        auto sumOfProducts = FMA( a, b, cd );
+        auto error = FMA( c, d, -cd );
+        return sumOfProducts + error;
+    }
+
+    namespace Internal
+    {
+        // InnerProduct Helper Functions
+        template<FloatingPointType FloatT>
+        constexpr [[nodiscard]] CompensatedFloat<FloatT> InnerProduct( FloatT a, FloatT b )
+        {
+            return TwoProd( a, b );
+        }
+
+        // Accurate dot products with FMA: Graillat et al.,
+        // https://www-pequan.lip6.fr/~graillat/papers/posterRNC7.pdf
+        //
+        // Accurate summation, dot product and polynomial evaluation in complex
+        // floating point arithmetic, Graillat and Menissier-Morain.
+        template <FloatingPointType FloatT, typename... T>
+        constexpr inline [[nodiscard]] CompensatedFloat<FloatT> InnerProduct( FloatT a, FloatT b, T... terms )
+        {
+            auto ab = TwoProd( a, b );
+            auto tp = InnerProduct( terms... );
+            auto sum = TwoSum( ab.v, tp.v );
+            return { sum.v, ab.err + ( tp.err + sum.err ) };
+        }
+
+    }
+
+    /// <summary>
+	/// Returns the inner product of a sequence of terms with reduced floating-point error.
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// A floating-point type.
+    /// </typeparam>
+    /// <typeparam name="...T">
+    /// A sequence of terms.
+    /// </typeparam>
+    /// <param name="term">
+    /// The first term.
+    /// </param>
+    /// <param name="...terms">
+    /// The remaining terms.
+    /// </param>
+    /// <returns>
+    /// The inner product of the terms.
+    /// </returns>
+    template <FloatingPointType FloatT, typename... T>
+        requires std::conjunction_v<std::is_arithmetic<T>...>
+    constexpr inline [[nodiscard]] FloatT InnerProduct( FloatT term, T... terms )
+    {
+        auto ip = Internal::InnerProduct( term, terms... );
+        return static_cast< FloatT >( ip );
+    }
+
+    /// <summary>
+	/// Calculates the roots of the quadratic equation ax^2 + bx + c = 0.
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// A floating-point type.
+    /// </typeparam>
+    /// <typeparam name="...T">
+    /// A sequence of terms.
+    /// </typeparam>
+    /// <param name="a">
+    /// The coefficient of x^2.
+    /// </param>
+    /// <param name="b">
+    /// The coefficient of x.
+    /// </param>
+    /// <param name="c">
+    /// The constant term.
+    /// </param>
+    /// <param name="t0">
+    /// The first root.
+    /// </param>
+    /// <param name="t1">
+    /// The second root.
+    /// </param>
+    /// <returns>
+    /// True if the roots were found, false otherwise.
+    /// </returns>
+    template <FloatingPointType FloatT, typename... T>
+    constexpr inline [[nodiscard]] bool Quadratic( FloatT a, FloatT b, FloatT c, FloatT* t0, FloatT* t1 )
+    {
+        // Handle case of $a=0$ for quadratic solution
+        if ( a == static_cast< FloatT >( 0 ) )
+        {
+            if ( b == static_cast< FloatT >( 0 ) )
+            {
+                return false;
+            }
+            *t0 = *t1 = -c / b;
+            return true;
+        }
+
+        // Find quadratic discriminant
+        FloatT discrim = DifferenceOfProducts( b, b, 4 * a, c );
+        if ( discrim < 0 )
+        {
+            return false;
+        }
+        FloatT rootDiscrim = Sqrt( discrim );
+
+        // Compute quadratic _t_ values
+        FloatT q = static_cast< FloatT >( -0.5 ) * ( b + CopySign( rootDiscrim, b ) );
+        *t0 = q / a;
+        *t1 = c / q;
+        if ( *t0 > *t1 )
+        {
+            std::swap( *t0, *t1 );
+        }
+        return true;
+    }
+
+
+    /// <summary>
+	/// Calculates the root of a function using a combination of Newton's method and bisection.
+    /// </summary>
+    /// <typeparam name="Func">
+    /// The type of the function.
+    /// </typeparam>
+    /// <typeparam name="FloatT">
+    /// A floating-point type.
+    /// </typeparam>
+    /// <param name="x0">
+    /// The lower bound of the search interval.
+    /// </param>
+    /// <param name="x1">
+    /// The upper bound of the search interval.
+    /// </param>
+    /// <param name="f">
+    /// The function to find the root of.
+    /// </param>
+    /// <param name="xEps">
+    /// The tolerance for the x values.
+    /// </param>
+    /// <param name="fEps">
+    /// The tolerance for the function values.
+    /// </param>
+    /// <returns>
+    /// The root of the function, or NaN if not found.
+    /// </returns>
+    template <typename Func, FloatingPointType FloatT>
+        requires std::is_invocable_r_v<std::pair<FloatT, FloatT>, Func, FloatT>
+    constexpr inline [[nodiscard]] FloatT NewtonBisection( FloatT x0, FloatT x1, Func f, FloatT xEps = static_cast< FloatT >( 1e-6 ), FloatT fEps = static_cast< FloatT >( 1e-6 ) )
+    {
+        FloatT fx0 = f( x0 ).first; 
+        FloatT fx1 = f( x1 ).first;
+        if ( Abs( fx0 ) < fEps )
+        {
+            return x0;
+        }
+        if ( Abs( fx1 ) < fEps )
+        {
+            return x1;
+        }
+        bool startIsNegative = fx0 < static_cast< FloatT >( 0 );
+
+        // Set initial midpoint using linear approximation of f
+        FloatT xMid = x0 + ( x1 - x0 ) * -fx0 / ( fx1 - fx0 );
+
+        while ( true )
+        {
+            // Fall back to bisection if _xMid_ is out of bounds
+            if ( !( x0 < xMid && xMid < x1 ) )
+            {
+                xMid = ( x0 + x1 ) / static_cast< FloatT >( 2 );
+            }
+
+            // Evaluate function and narrow bracket range _[x0, x1]_
+            std::pair<FloatT, FloatT> fxMid = f( xMid );
+
+            if ( startIsNegative == ( fxMid.first < static_cast< FloatT >( 0 ) ) )
+            {
+                x0 = xMid;
+            }
+            else
+            {
+                x1 = xMid;
+            }
+
+            // Stop the iteration if converged
+            if ( ( x1 - x0 ) < xEps || Abs( fxMid.first ) < fEps )
+            {
+                return xMid;
+            }
+            // Perform a Newton step
+            xMid -= fxMid.first / fxMid.second;
+        }
+    }
+
+
+
+
+
+
+    /// <summary>
+	/// Represents a closed interval [lowerBound, upperBound] of floating-point values.
+    /// </summary>
+	/// <remarks>
+    /// Interval arithmetic represents each computed value as a conservative enclosure 
+    /// [lower, upper] so the true mathematical result is guaranteed to lie inside the 
+    /// interval. Use `Interval<T>` to make rounding and cancellation explicit and to 
+    /// make numerical decisions robust.
+    /// 
+    /// Mathematical summary:
+    /// - For a scalar computation replace a single floating result `x` by an interval \([x_{\min}, x_{\max}]\).
+    /// - For a product computed with a compensated pair \(p, \varepsilon\) (for example from `TwoProd(a,b)`) convert to an interval using:
+    ///   $$[\,\mathrm{SubAdjustDown}(p,\varepsilon),\ \mathrm{AddAdjustUp}(p,\varepsilon)\,].$$
+    /// 
+    /// Usage notes:
+    /// - Convert compensated results to intervals: call `Interval<T>::FromValueAndError(p.v, p.err)` to obtain a tight enclosure.
+    /// - Propagate bounds with interval operators `+`, `-`, `*`, `/`: these functions use directed rounding (`NextDown` / `NextUp`) so enclosures remain conservative.
+    /// - Detect cancellation or sign-uncertainty by inspecting interval endpoints, for example test the discriminant with `if (discrim.LowerBound() &gt;= 0)` to decide on real roots.
+    /// - Intervals are conservative and may widen; combine them with compensated helpers (`TwoProd`, `TwoSum`, `FMA`) to keep bounds tight.
+    /// 
+    /// Short example:
+    /// <code><![CDATA[
+    /// using namespace Harlinn::Math;
+    /// double a = 1e16 + 1.0;
+    /// double b = 1e-16;
+    /// 
+    /// // compute compensated product then convert to interval
+    /// auto p = TwoProd(a, b); // CompensatedFloat<double> { v, err }
+    /// auto abInterval = Interval<double>::FromValueAndError(p.v, p.err);
+    /// 
+    /// // accumulate as interval sum
+    /// Interval<double> sum(0.0);
+    /// sum += abInterval;
+    /// // inspect midpoint and width
+    /// double mid = static_cast<double>(sum); // midpoint
+    /// double width = sum.Width();
+    /// ]]></code>
+    /// 
+    /// When to use:
+    /// - Use `Interval<T>` for validation, branching decisions that must be correct despite rounding, and for algorithms where guaranteed bounds are required. Combine intervals with compensated arithmetic to minimize overestimation while preserving safety.
+    /// 
+	/// </remarks>
+    /// <typeparam name="T">
+    /// The type of the interval.
+    /// </typeparam>
+    template<FloatingPointType T>
+    class Interval
+    {
+    public:
+        using value_type = T;
+        //static inline constexpr Interval Pi{Constants<value_type>::Pi,Constants<value_type>::Pi };
+    private:
+        value_type lowerBound_ = static_cast< value_type >( 0 );
+        value_type upperBound_ = static_cast< value_type >( 0 );
+    public:
+        /// <summary>
+		/// The default constructor for Interval.
+        /// </summary>
+        constexpr Interval( ) = default;
+
+        /// <summary>
+		/// Constructor for Interval that initializes both bounds to the same value.
+        /// </summary>
+        /// <param name="v">
+        /// The value to initialize the interval.
+        /// </param>
+        constexpr explicit Interval( value_type v )
+            : lowerBound_( v ), upperBound_( v )
+        {
+        }
+
+        /// <summary>
+		/// Constructor for Interval that initializes the bounds to the given values.
+        /// </summary>
+        /// <param name="low">
+        /// The lower bound of the interval.
+        /// </param>
+        /// <param name="high">
+        /// The upper bound of the interval.
+        /// </param>
+        constexpr Interval( value_type low, value_type high )
+            : lowerBound_( std::min( low, high ) ), upperBound_( std::max( low, high ) )
+        {
+        }
+    private:
+        constexpr Interval( value_type low, value_type high, bool )
+            : lowerBound_( low ), upperBound_( high )
+        {
+        }
+    public:
+        /// <summary>
+		/// Returns an Interval from a value and an associated error.
+        /// </summary>
+        /// <param name="v">
+        /// The value to initialize the interval.
+        /// </param>
+        /// <param name="err">
+        /// The error.
+        /// </param>
+        /// <returns></returns>
+        constexpr static [[nodiscard]] Interval FromValueAndError( value_type v, value_type err )
+        {
+            if ( err == static_cast< value_type >( 0 ) )
+            {
+                return Interval( v );
+            }
+            else
+            {
+                return Interval( SubAdjustDown( v, err ), AddAdjustUp( v, err ) );
+            }
+        }
+
+        /// <summary>
+        /// Assigns the argument to both the upper and lower bound.
+        /// </summary>
+        /// <param name="v">
+        /// The argument value.
+        /// </param>
+        /// <returns></returns>
+        constexpr Interval& operator=( value_type v )
+        {
+            lowerBound_ = v;
+            upperBound_ = v;
+            return *this;
+        }
+
+        /// <summary>
+		/// Returns the upper bound of the interval.
+        /// </summary>
+        /// <returns>
+        /// The upper bound of the interval.
+        /// </returns>
+        constexpr [[nodiscard]] value_type UpperBound( ) const { return upperBound_; }
+        /// <summary>
+		/// Returns the lower bound of the interval.
+        /// </summary>
+        /// <returns>
+        /// The lower bound of the interval.
+        /// </returns>
+        constexpr [[nodiscard]] value_type LowerBound( ) const { return lowerBound_; }
+        /// <summary>
+		/// Returns the midpoint of the interval.
+        /// </summary>
+        /// <returns>
+        /// The midpoint of the interval.
+        /// </returns>
+        constexpr [[nodiscard]] value_type Midpoint( ) const { return ( lowerBound_ + upperBound_ ) / 2; }
+        /// <summary>
+		/// Returns the width of the interval.
+        /// </summary>
+        /// <returns>
+        /// The width of the interval.
+        /// </returns>
+        constexpr [[nodiscard]] value_type Width( ) const { return upperBound_ - lowerBound_; }
+
+        /// <summary>
+		/// Returns the i'th bound of the interval.
+        /// </summary>
+        /// <param name="i"></param>
+        /// <returns></returns>
+        constexpr [[nodiscard]] value_type operator[]( size_t i ) const
+        {
+            return i == 0 ? lowerBound_ : upperBound_;
+        }
+
+        /// <summary>
+		/// Returns the midpoint of the interval as a value_type.
+        /// </summary>
+        constexpr explicit [[nodiscard]] operator value_type( ) const
+        {
+            return Midpoint( );
+        }
+
+        /// <summary>
+		/// Returns true if the interval exactly represents the value v.
+        /// </summary>
+        /// <param name="v">
+        /// The value to check.
+        /// </param>
+        /// <returns>
+        /// True if the interval exactly represents the value v, false otherwise.
+        /// </returns>
+        constexpr [[nodiscard]] bool Exactly( value_type v ) const
+        {
+            return lowerBound_ == v && upperBound_ == v;
+        }
+
+        /// <summary>
+		/// Returns true if the interval exactly represents the value v.
+        /// </summary>
+        /// <param name="v">
+        /// The value to check.
+        /// </param>
+        /// <returns>
+        /// True if the interval exactly represents the value v, false otherwise.
+        /// </returns>
+        constexpr [[nodiscard]] bool operator==( value_type v ) const
+        {
+            return Exactly( v );
+        }
+
+        /// <summary>
+		/// Returns the negation of the interval.
+        /// </summary>
+        /// <returns></returns>
+        constexpr [[nodiscard]] Interval operator-( ) const
+        {
+            return { -upperBound_, -lowerBound_ };
+        }
+
+        /// <summary>
+		/// Returns the sum of this interval and another interval.
+        /// </summary>
+        /// <param name="i">
+        /// The interval to add.
+        /// </param>
+        /// <returns>
+        /// The sum of this interval and another interval.
+        /// </returns>
+        constexpr [[nodiscard]] Interval operator+( const Interval& i ) const
+        {
+            return { AddAdjustDown( lowerBound_, i.lowerBound_ ), AddAdjustUp( upperBound_, i.upperBound_ ) };
+        }
+
+        /// <summary>
+		/// Returns the difference of this interval and another interval.
+        /// </summary>
+        /// <param name="i">
+        /// The interval to subtract.
+        /// </param>
+        /// <returns>
+        /// The difference of this interval and another interval.
+        /// </returns>
+        constexpr [[nodiscard]] Interval operator-( const Interval& i ) const
+        {
+            return { SubAdjustDown( lowerBound_, i.upperBound_ ), SubAdjustUp( upperBound_, i.lowerBound_ ) };
+        }
+
+        /// <summary>
+		/// Returns the product of this interval and another interval.
+        /// </summary>
+        /// <param name="i">
+        /// The interval to multiply.
+        /// </param>
+        /// <returns>
+        /// The product of this interval and another interval.
+        /// </returns>
+        constexpr [[nodiscard]] Interval operator*( const Interval& i ) const
+        {
+            value_type lp[ 4 ] =
+            {
+                MulAdjustDown( lowerBound_, i.lowerBound_ ),
+                MulAdjustDown( upperBound_, i.lowerBound_ ),
+                MulAdjustDown( lowerBound_, i.upperBound_ ),
+                MulAdjustDown( upperBound_, i.upperBound_ )
+            };
+            value_type hp[ 4 ] =
+            {
+                MulAdjustUp( lowerBound_, i.lowerBound_ ),
+                MulAdjustUp( upperBound_, i.lowerBound_ ),
+                MulAdjustUp( lowerBound_, i.upperBound_ ),
+                MulAdjustUp( upperBound_, i.upperBound_ )
+            };
+            return { Min( lp[ 0 ], lp[ 1 ], lp[ 2 ], lp[ 3 ] ),
+                    Max( hp[ 0 ], hp[ 1 ], hp[ 2 ], hp[ 3 ] ) };
+        }
+
+        /// <summary>
+		/// Returns the quotient of this interval and another interval.
+        /// </summary>
+        /// <param name="i">
+        /// The interval to divide.
+        /// </param>
+        /// <returns>
+        /// The quotient of this interval and another interval.
+        /// </returns>
+        constexpr [[nodiscard]] Interval operator/( const Interval& i ) const;
+
+        /// <summary>
+		/// Returns true if this interval is equal to another interval.
+        /// </summary>
+        /// <param name="i">
+        /// The interval to compare.
+        /// </param>
+        /// <returns>
+        /// True if this interval is equal to another interval.
+        /// </returns>
+        constexpr [[nodiscard]] bool operator==( const Interval& i ) const
+        {
+            return lowerBound_ == i.lowerBound_ && upperBound_ == i.upperBound_;
+        }
+
+        /// <summary>
+		/// Returns true if this interval does not contain the value f.
+        /// </summary>
+        /// <param name="f">
+        /// The value to check.
+        /// </param>
+        /// <returns>
+        /// True if this interval does not contain the value f.
+        /// </returns>
+        constexpr [[nodiscard]] bool operator!=( value_type f ) const
+        {
+            return f < lowerBound_ || f > upperBound_;
+        }
+
+        /// <summary>
+		/// Returns a string representation of the interval.
+        /// </summary>
+        /// <returns>
+        /// A string representation of the interval.
+        /// </returns>
+        [[nodiscard]] std::string ToString( ) const;
+
+        /// <summary>
+		/// Adds another interval to this interval.
+        /// </summary>
+        /// <param name="i">
+        /// The interval to add.
+        /// </param>
+        /// <returns>
+        /// A reference to this interval.
+        /// </returns>
+        constexpr [[nodiscard]] Interval& operator+=( Interval i )
+        {
+            *this = Interval( *this + i );
+            return *this;
+        }
+
+        /// <summary>
+		/// Subtracts another interval from this interval.
+        /// </summary>
+        /// <param name="i">
+        /// The interval to subtract.
+        /// </param>
+        /// <returns>
+        /// A reference to this interval.
+        /// </returns>
+        constexpr Interval& operator-=( Interval i )
+        {
+            *this = Interval( *this - i );
+            return *this;
+        }
+        /// <summary>
+		/// Multiplies this interval by another interval.
+        /// </summary>
+        /// <param name="i">
+        /// The interval to multiply.
+        /// </param>
+        /// <returns>
+        /// A reference to this interval.
+        /// </returns>
+        constexpr Interval& operator*=( Interval i )
+        {
+            *this = Interval( *this * i );
+            return *this;
+        }
+
+        /// <summary>
+		/// Divides this interval by another interval.
+        /// </summary>
+        /// <param name="i">
+        /// The interval to divide.
+        /// </param>
+        /// <returns>
+        /// A reference to this interval.
+        /// </returns>
+        constexpr Interval& operator/=( Interval i )
+        {
+            *this = Interval( *this / i );
+            return *this;
+        }
+        /// <summary>
+		/// Adds a scalar value to this interval.
+        /// </summary>
+        /// <param name="f">
+        /// The scalar value to add.
+        /// </param>
+        /// <returns>
+        /// A reference to this interval.
+        /// </returns>
+        constexpr Interval& operator+=( value_type f ) { return *this += Interval( f ); }
+        /// <summary>
+		/// Subtracts a scalar value from this interval.
+        /// </summary>
+        /// <param name="f">
+        /// The scalar value to subtract.
+        /// </param>
+        /// <returns>
+        /// A reference to this interval.
+        /// </returns>
+        constexpr Interval& operator-=( value_type f ) { return *this -= Interval( f ); }
+        /// <summary>
+		/// Multiplies this interval by a scalar value.
+        /// </summary>
+        /// <param name="f">
+        /// The scalar value to multiply.
+        /// </param>
+        /// <returns>
+        /// A reference to this interval.
+        /// </returns>
+        constexpr Interval& operator*=( value_type f )
+        {
+            if ( f > static_cast< value_type >( 0 ) )
+            {
+                *this = Interval( MulAdjustDown( f, lowerBound_ ), MulAdjustUp( f, upperBound_ ) );
+            }
+            else
+            {
+                *this = Interval( MulAdjustDown( f, upperBound_ ), MulAdjustUp( f, lowerBound_ ) );
+            }
+            return *this;
+        }
+        /// <summary>
+		/// Divides this interval by a scalar value.
+        /// </summary>
+        /// <param name="f">
+        /// The scalar value to divide by.
+        /// </param>
+        /// <returns>
+        /// A reference to this interval.
+        /// </returns>
+        constexpr Interval& operator/=( value_type f )
+        {
+            if ( f > static_cast< value_type >( 0 ) )
+            {
+                *this = Interval( DivAdjustDown( lowerBound_, f ), DivAdjustUp( upperBound_, f ) );
+            }
+            else
+            {
+                *this = Interval( DivAdjustDown( upperBound_, f ), DivAdjustUp( lowerBound_, f ) );
+            }
+            return *this;
+        }
+
+
+    };
+
+    // Interval Inline Functions
+    
+    /// <summary>
+	/// Tests whether a floating-point value is contained within an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// The floating-point type.
+    /// </typeparam>
+    /// <param name="value">
+    /// The floating-point value to test.
+    /// </param>
+    /// <param name="interval">
+    /// The interval to test against.
+    /// </param>
+    /// <returns>
+    /// True if the value is within the interval, false otherwise.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    constexpr inline [[nodiscard]] bool InRange( FloatT value, const Interval<FloatT>& interval )
+    {
+        return value >= interval.LowerBound( ) && value <= interval.UpperBound( );
+    }
+
+    /// <summary>
+	/// Tests whether two intervals overlap.
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// The floating-point type.
+    /// </typeparam>
+    /// <param name="first">
+    /// The first interval.
+    /// </param>
+    /// <param name="second">
+    /// The second interval.
+    /// </param>
+    /// <returns>
+    /// True if the intervals overlap, false otherwise.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    constexpr inline [[nodiscard]] bool InRange( const Interval<FloatT>& first, const Interval<FloatT>& second )
+    {
+        return first.LowerBound( ) <= second.UpperBound( ) && first.UpperBound( ) >= second.LowerBound( );
+    }
+
+    template<FloatingPointType FloatT>
+    constexpr inline [[nodiscard]] Interval<FloatT> Interval<FloatT>::operator/( const Interval<FloatT>& interval ) const
+    {
+        if ( InRange( static_cast< FloatT >( 0 ), interval ) )
+        {
+            // The interval we're dividing by straddles zero, so just
+            // return an interval of everything.
+            return Interval<FloatT>( -std::numeric_limits<FloatT>::infinity( ), std::numeric_limits<FloatT>::infinity( ) );
+        }
+        FloatT lowQuot[ 4 ] = { DivAdjustDown( lowerBound_, interval.lowerBound_ ), DivAdjustDown( upperBound_, interval.lowerBound_ ),
+                            DivAdjustDown( lowerBound_, interval.upperBound_ ), DivAdjustDown( upperBound_, interval.upperBound_ ) };
+        FloatT highQuot[ 4 ] = { DivAdjustUp( lowerBound_, interval.lowerBound_ ), DivAdjustUp( upperBound_, interval.lowerBound_ ),
+                             DivAdjustUp( lowerBound_, interval.upperBound_ ), DivAdjustUp( upperBound_, interval.upperBound_ ) };
+        return { Min( lowQuot[ 0 ], lowQuot[ 1 ], lowQuot[ 2 ], lowQuot[ 3 ] ),
+                Max( highQuot[ 0 ], highQuot[ 1 ], highQuot[ 2 ], highQuot[ 3 ] ) };
+    }
+
+    /// <summary>
+	/// Calculates the square of an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="interval">
+    /// The interval to square.
+    /// </param>
+    /// <returns>
+    /// The squared interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    constexpr inline [[nodiscard]] Interval<FloatT> Sqr( const Interval<FloatT>& interval )
+    {
+        FloatT alow = Abs( interval.LowerBound( ) );
+        FloatT ahigh = Abs( interval.UpperBound( ) );
+        if ( alow > ahigh )
+        {
+            std::swap( alow, ahigh );
+        }
+        if ( InRange( static_cast< FloatT >( 0 ), interval ) )
+        {
+            return Interval<FloatT>( static_cast< FloatT >( 0 ), MulAdjustUp( ahigh, ahigh ) );
+        }
+        return Interval<FloatT>( MulAdjustDown( alow, alow ), MulAdjustUp( ahigh, ahigh ) );
+    }
+
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> MulPow2( FloatT s, const Interval<FloatT>& i );
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> MulPow2( const Interval<FloatT>& i, FloatT s );
+
+    /// <summary>
+	/// Adds a floating-point value to an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// The floating-point type.
+    /// </typeparam>
+    /// <param name="f">
+    /// The floating-point value.
+    /// </param>
+    /// <param name="i">
+    /// The interval.
+    /// </param>
+    /// <returns>
+    /// The resulting interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> operator+( FloatT f, const Interval<FloatT>& i )
+    {
+        return Interval<FloatT>( f ) + i;
+    }
+
+    /// <summary>
+	/// Subtracts an interval from a floating-point value.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="f">
+	/// The floating-point value.
+    /// </param>
+    /// <param name="i">
+	/// The interval.
+    /// </param>
+    /// <returns>
+	/// The resulting interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> operator-( FloatT f, const Interval<FloatT>& i )
+    {
+        return Interval<FloatT>( f ) - i;
+    }
+
+    /// <summary>
+	/// Multiplies a floating-point value by an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="f">
+	/// The floating-point value.
+    /// </param>
+    /// <param name="i">
+	/// The interval.
+    /// </param>
+    /// <returns>
+	/// The resulting interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> operator*( FloatT f, const Interval<FloatT>& i )
+    {
+        if ( f > static_cast< FloatT >( 0 ) )
+        {
+            return Interval<FloatT>( MulAdjustDown( f, i.LowerBound( ) ), MulAdjustUp( f, i.UpperBound( ) ) );
+        }
+        else
+        {
+            return Interval<FloatT>( MulAdjustDown( f, i.UpperBound( ) ), MulAdjustUp( f, i.LowerBound( ) ) );
+        }
+    }
+
+    /// <summary>
+	/// Divides a floating-point value by an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="f">
+	/// The floating-point value.
+    /// </param>
+    /// <param name="i">
+	/// The interval.
+    /// </param>
+    /// <returns>
+	/// The resulting interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> operator/( FloatT f, const Interval<FloatT>& i )
+    {
+        if ( InRange( static_cast< FloatT >( 0 ), i ) )
+        {
+            // The interval we're dividing by straddles zero, so just
+            // return an interval of everything.
+            return Interval<FloatT>( -std::numeric_limits<FloatT>::infinity( ), std::numeric_limits<FloatT>::infinity( ) );
+        }
+
+        if ( f > static_cast< FloatT >( 0 ) )
+        {
+            return Interval( DivAdjustDown( f, i.UpperBound( ) ), DivAdjustUp( f, i.LowerBound( ) ) );
+        }
+        else
+        {
+            return Interval( DivAdjustDown( f, i.LowerBound( ) ), DivAdjustUp( f, i.UpperBound( ) ) );
+        }
+    }
+
+    /// <summary>
+	/// Adds an interval and a floating-point value.
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+    /// The interval.
+    /// </param>
+    /// <param name="f">
+    /// The floating-point value.
+    /// </param>
+    /// <returns>
+    /// The resulting interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> operator+( const Interval<FloatT>& i, FloatT f )
+    {
+        return i + Interval( f );
+    }
+
+    /// <summary>
+	/// Subtracts a floating-point value from an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+	/// The interval.
+    /// </param>
+    /// <param name="f">
+	/// The floating-point value.
+    /// </param>
+    /// <returns>
+	/// The resulting interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> operator-( const Interval<FloatT>& i, FloatT f )
+    {
+        return i - Interval( f );
+    }
+
+    /// <summary>
+	/// Multiplies an interval by a floating-point value.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+	/// The interval.
+    /// </param>
+    /// <param name="f">
+	/// The floating-point value.
+    /// </param>
+    /// <returns>
+	/// The resulting interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> operator*( const Interval<FloatT>& i, FloatT f )
+    {
+        if ( f > static_cast< FloatT >( 0 ) )
+            return Interval( MulAdjustDown( f, i.LowerBound( ) ), MulAdjustUp( f, i.UpperBound( ) ) );
+        else
+            return Interval( MulAdjustDown( f, i.UpperBound( ) ), MulAdjustUp( f, i.LowerBound( ) ) );
+    }
+
+    /// <summary>
+	/// Divides an interval by a floating-point value.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+	/// The interval.
+    /// </param>
+    /// <param name="f">
+	/// The floating-point value.
+    /// </param>
+    /// <returns>
+	/// The resulting interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> operator/( const Interval<FloatT>& i, FloatT f )
+    {
+        if ( f == static_cast< FloatT >( 0 ) )
+        {
+            return Interval( -std::numeric_limits<FloatT>::infinity( ), std::numeric_limits<FloatT>::infinity( ) );
+        }
+
+        if ( f > static_cast< FloatT >( 0 ) )
+        {
+            return Interval( DivAdjustDown( i.LowerBound( ), f ), DivAdjustUp( i.UpperBound( ), f ) );
+        }
+        else
+        {
+            return Interval( DivAdjustDown( i.UpperBound( ), f ), DivAdjustUp( i.LowerBound( ), f ) );
+        }
+    }
+
+    /// <summary>
+	/// Calculates the floor of the lower bound of an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+    /// The interval.
+    /// </param>
+    /// <returns>
+    /// The floor of the lower bound of the interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] FloatT Floor( const Interval<FloatT>& i )
+    {
+        return Floor( i.LowerBound( ) );
+    }
+
+    /// <summary>
+	/// Calculates the ceiling of the upper bound of an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+	/// The interval.
+    /// </param>
+    /// <returns>
+	/// The ceiling of the upper bound of the interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] FloatT Ceil( const Interval<FloatT>& i )
+    {
+        return Ceil( i.UpperBound( ) );
+    }
+
+    /// <summary>
+	/// Calculates the floor of the lower bound of an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+	/// The interval.
+    /// </param>
+    /// <returns>
+	/// The floor of the lower bound of the interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] FloatT floor( const Interval<FloatT>& i )
+    {
+        return Floor( i );
+    }
+
+    /// <summary>
+	/// Calculates the ceiling of the upper bound of an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+	/// The interval.
+    /// </param>
+    /// <returns>
+	/// The ceiling of the upper bound of the interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] FloatT ceil( const Interval<FloatT>& i )
+    {
+        return Ceil( i );
+    }
+
+    /// <summary>
+	/// Calculates the minimum of the lower bounds of two intervals.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The first interval.
+    /// </param>
+    /// <param name="b">
+	/// The second interval.
+    /// </param>
+    /// <returns>
+	/// The minimum of the lower bounds of the two intervals.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] FloatT Min( const Interval<FloatT>& a, const Interval<FloatT>& b )
+    {
+        return std::min( a.LowerBound( ), b.LowerBound( ) );
+    }
+
+    /// <summary>
+	/// Calculates the maximum of the upper bounds of two intervals.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The first interval.
+    /// </param>
+    /// <param name="b">
+	/// The second interval.
+    /// </param>
+    /// <returns>
+	/// The maximum of the upper bounds of the two intervals.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] FloatT Max( const Interval<FloatT>& a, const Interval<FloatT>& b )
+    {
+        return std::max( a.UpperBound( ), b.UpperBound( ) );
+    }
+
+    /// <summary>
+	/// Calculates the minimum of the lower bounds of two intervals.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The first interval.
+    /// </param>
+    /// <param name="b">
+	/// The second interval.
+    /// </param>
+    /// <returns>
+	/// The minimum of the lower bounds of the two intervals.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] FloatT min( const Interval<FloatT>& a, const Interval<FloatT>& b )
+    {
+        return Min( a, b );
+    }
+
+    /// <summary>
+	/// Calculates the maximum of the upper bounds of two intervals.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The first interval.
+    /// </param>
+    /// <param name="b">
+	/// The second interval.
+    /// </param>
+    /// <returns>
+	/// The maximum of the upper bounds of the two intervals.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] FloatT max( const Interval<FloatT>& a, const Interval<FloatT>& b )
+    {
+        return Max( a, b );
+    }
+
+    /// <summary>
+	/// Calculates the square root of an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+	/// The interval.
+    /// </param>
+    /// <returns>
+	/// The square root of the interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> Sqrt( const Interval<FloatT>& i )
+    {
+        return { SqrtAdjustDown( i.LowerBound( ) ), SqrtAdjustUp( i.UpperBound( ) ) };
+    }
+
+    /// <summary>
+	/// Calculates the square root of an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+    /// The interval.
+    /// </param>
+    /// <returns>
+    /// The square root of the interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> sqrt( const Interval<FloatT>& i )
+    {
+        return Sqrt( i );
+    }
+
+    /// <summary>
+	/// Calculates the fused multiply-add of three intervals.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The first interval.
+    /// </param>
+    /// <param name="b">
+	/// The second interval.
+    /// </param>
+    /// <param name="c">
+	/// The third interval.
+    /// </param>
+    /// <returns>
+    /// The fused multiply-add of the three intervals.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> FMA( const Interval<FloatT>& a, const Interval<FloatT>& b, const Interval<FloatT>& c )
+    {
+        FloatT low = Min( FMAAdjustDown( a.LowerBound( ), b.LowerBound( ), c.LowerBound( ) ),
+            FMAAdjustDown( a.UpperBound( ), b.LowerBound( ), c.LowerBound( ) ),
+            FMAAdjustDown( a.LowerBound( ), b.UpperBound( ), c.LowerBound( ) ),
+            FMAAdjustDown( a.UpperBound( ), b.UpperBound( ), c.LowerBound( ) ) );
+        FloatT high = Max( FMAAdjustUp( a.LowerBound( ), b.LowerBound( ), c.UpperBound( ) ),
+            FMAAdjustUp( a.UpperBound( ), b.LowerBound( ), c.UpperBound( ) ),
+            FMAAdjustUp( a.LowerBound( ), b.UpperBound( ), c.UpperBound( ) ),
+            FMAAdjustUp( a.UpperBound( ), b.UpperBound( ), c.UpperBound( ) ) );
+        return Interval<FloatT>( low, high );
+    }
+
+    /// <summary>
+    /// Calculates the difference of products of the arguments.
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// A floating-point type.
+    /// </typeparam>
+    /// <param name="a">
+    /// The first interval.
+    /// </param>
+    /// <param name="b">
+    /// The second interval.
+    /// </param>
+    /// <param name="c">
+    /// The third interval.
+    /// </param>
+    /// <param name="d">
+    /// The fourth interval.
+    /// </param>
+    /// <returns>
+    /// The difference of products of the arguments.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> DifferenceOfProducts( const Interval<FloatT>& a, const Interval<FloatT>& b, const Interval<FloatT>& c, const Interval<FloatT>& d )
+    {
+        FloatT ab[ 4 ] =
+        {
+            a.LowerBound( ) * b.LowerBound( ),
+            a.UpperBound( ) * b.LowerBound( ),
+            a.LowerBound( ) * b.UpperBound( ),
+            a.UpperBound( ) * b.UpperBound( )
+        };
+        FloatT abLow = Min( ab[ 0 ], ab[ 1 ], ab[ 2 ], ab[ 3 ] );
+        FloatT abHigh = Max( ab[ 0 ], ab[ 1 ], ab[ 2 ], ab[ 3 ] );
+        int abLowIndex = abLow == ab[ 0 ] ? 0 : ( abLow == ab[ 1 ] ? 1 : ( abLow == ab[ 2 ] ? 2 : 3 ) );
+        int abHighIndex =
+            abHigh == ab[ 0 ] ? 0 : ( abHigh == ab[ 1 ] ? 1 : ( abHigh == ab[ 2 ] ? 2 : 3 ) );
+
+        FloatT cd[ 4 ] =
+        {
+            c.LowerBound( ) * d.LowerBound( ),
+            c.UpperBound( ) * d.LowerBound( ),
+            c.LowerBound( ) * d.UpperBound( ),
+            c.UpperBound( ) * d.UpperBound( )
+        };
+        FloatT cdLow = Min( cd[ 0 ], cd[ 1 ], cd[ 2 ], cd[ 3 ] );
+        FloatT cdHigh = Max( cd[ 0 ], cd[ 1 ], cd[ 2 ], cd[ 3 ] );
+        int cdLowIndex = cdLow == cd[ 0 ] ? 0 : ( cdLow == cd[ 1 ] ? 1 : ( cdLow == cd[ 2 ] ? 2 : 3 ) );
+        int cdHighIndex = cdHigh == cd[ 0 ] ? 0 : ( cdHigh == cd[ 1 ] ? 1 : ( cdHigh == cd[ 2 ] ? 2 : 3 ) );
+
+        // Invert cd Indices since it's subtracted...
+        FloatT low = DifferenceOfProducts( a[ abLowIndex & 1 ], b[ abLowIndex >> 1 ], c[ cdHighIndex & 1 ], d[ cdHighIndex >> 1 ] );
+        FloatT high = DifferenceOfProducts( a[ abHighIndex & 1 ], b[ abHighIndex >> 1 ], c[ cdLowIndex & 1 ], d[ cdLowIndex >> 1 ] );
+
+
+        return { NextDown( NextDown( low ) ), NextUp( NextUp( high ) ) };
+    }
+
+    /// <summary>
+	/// Calculates the sum of products of the arguments.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The first interval.
+    /// </param>
+    /// <param name="b">
+	/// The second interval.
+    /// </param>
+    /// <param name="c">
+	/// The third interval.
+    /// </param>
+    /// <param name="d">
+	/// The fourth interval.
+    /// </param>
+    /// <returns>
+	/// The sum of products of the arguments.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> SumOfProducts( const Interval<FloatT>& a, const Interval<FloatT>& b, const Interval<FloatT>& c, const Interval<FloatT>& d )
+    {
+        return DifferenceOfProducts( a, b, -c, d );
+    }
+
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> MulPow2( FloatT s, const Interval<FloatT>& i )
+    {
+        return MulPow2( i, s );
+    }
+
+    /// <summary>
+	/// Calculates the multiplication of an interval by a power-of-two scalar.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+	/// The interval.
+    /// </param>
+    /// <param name="s">
+	/// The power-of-two scalar.
+    /// </param>
+    /// <returns>
+	/// The resulting interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> MulPow2( const Interval<FloatT>& i, FloatT s )
+    {
+        FloatT as = std::abs( s );
+
+        // Multiplication by powers of 2 is exaact
+        return Interval<FloatT>( std::min( i.LowerBound( ) * s, i.UpperBound( ) * s ),
+            std::max( i.LowerBound( ) * s, i.UpperBound( ) * s ) );
+    }
+
+    /// <summary>
+	/// Calculates the absolute value of an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+    /// The interval.
+    /// </param>
+    /// <returns>
+    /// The absolute value of the interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> Abs( const Interval<FloatT>& i )
+    {
+        if ( i.LowerBound( ) >= static_cast< FloatT >( 0 ) )
+        {
+            // The entire interval is greater than zero, so we're all set.
+            return i;
+        }
+        else if ( i.UpperBound( ) <= static_cast< FloatT >( 0 ) )
+        {
+            // The entire interval is less than zero.
+            return Interval( -i.UpperBound( ), -i.LowerBound( ) );
+        }
+        else
+        {
+            // The interval straddles zero.
+            return Interval( static_cast< FloatT >( 0 ), std::max( -i.LowerBound( ), i.UpperBound( ) ) );
+        }
+    }
+
+    /// <summary>
+	/// Calculates the absolute value of an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+	/// The interval.
+    /// </param>
+    /// <returns>
+	/// The absolute value of the interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> abs( const Interval<FloatT>& i )
+    {
+        return Abs( i );
+    }
+
+    /// <summary>
+	/// Calculates the arc-cosine of an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+	/// The interval.
+    /// </param>
+    /// <returns>
+	/// The arc-cosine of the interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> ACos( const Interval<FloatT>& i )
+    {
+        FloatT low = ACos( std::min<FloatT>( static_cast< FloatT >( 1 ), i.UpperBound( ) ) );
+        FloatT high = ACos( std::max<FloatT>( static_cast< FloatT >( -1 ), i.LowerBound( ) ) );
+
+        return Interval<FloatT>( std::max<FloatT>( static_cast< FloatT >( 0 ), NextDown( low ) ), NextUp( high ) );
+    }
+
+    /// <summary>
+	/// Calculates the sine of an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+	/// The interval.
+    /// </param>
+    /// <returns>
+	/// The sine of the interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> Sin( const Interval<FloatT>& i )
+    {
+        FloatT low = Math::Sin( std::max<FloatT>( static_cast< FloatT >( 0 ), i.LowerBound( ) ) );
+        FloatT high = Math::Sin( i.UpperBound( ) );
+
+        if ( low > high )
+        {
+            std::swap( low, high );
+        }
+        low = std::max<FloatT>( static_cast< FloatT >( -1 ), NextDown( low ) );
+        high = std::min<FloatT>( static_cast< FloatT >( 1 ), NextUp( high ) );
+        if ( InRange( Constants<FloatT>::PiOver2, i ) )
+        {
+            high = static_cast< FloatT >( 1 );
+        }
+        if ( InRange( ( static_cast< FloatT >( 3. ) / static_cast< FloatT >( 2. ) ) * Constants<FloatT>::Pi, i ) )
+        {
+            low = static_cast< FloatT >( -1 );
+        }
+        return Interval( low, high );
+    }
+
+    /// <summary>
+	/// Calculates the cosine of an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+	/// The interval.
+    /// </param>
+    /// <returns>
+	/// The cosine of the interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> Cos( const Interval<FloatT>& i )
+    {
+        FloatT low = Math::Cos( std::max<FloatT>( static_cast< FloatT >( 0 ), i.LowerBound( ) ) );
+        FloatT high = Math::Cos( i.UpperBound( ) );
+        if ( low > high )
+        {
+            std::swap( low, high );
+        }
+        low = std::max<FloatT>( static_cast< FloatT >( -1 ), NextDown( low ) );
+        high = std::min<FloatT>( static_cast< FloatT >( 1 ), NextUp( high ) );
+        if ( InRange( Constants<FloatT>::Pi, i ) )
+        {
+            low = static_cast< FloatT >( -1 );
+        }
+
+        return Interval( low, high );
+    }
+
+    /// <summary>
+	/// Calculates the sine and cosine of an interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+    /// The interval.
+    /// </param>
+    /// <param name="sine">
+    /// The sine of the interval.
+    /// </param>
+    /// <param name="cosine">
+    /// The cosine of the interval.
+    /// </param>
+    template<FloatingPointType FloatT>
+    inline void SinCos( const Interval<FloatT>& i, Interval<FloatT>* sine, Interval<FloatT>* cosine )
+    {
+        FloatT sinLow;
+        FloatT cosLow;
+        Math::SinCos( std::max<FloatT>( static_cast< FloatT >( 0 ), i.LowerBound( ) ), &sinLow, &cosLow );
+
+        FloatT sinHigh;
+        FloatT cosHigh;
+        Math::SinCos( i.UpperBound( ), &sinHigh, &cosHigh );
+
+        if ( sinLow > sinHigh )
+        {
+            std::swap( sinLow, sinHigh );
+        }
+        if ( cosLow > cosHigh )
+        {
+            std::swap( cosLow, cosHigh );
+        }
+        sinLow = std::max<FloatT>( static_cast< FloatT >( -1 ), NextDown( sinLow ) );
+        sinHigh = std::min<FloatT>( static_cast< FloatT >( 1 ), NextUp( sinHigh ) );
+        cosLow = std::max<FloatT>( static_cast< FloatT >( -1 ), NextDown( cosLow ) );
+        cosHigh = std::min<FloatT>( static_cast< FloatT >( 1 ), NextUp( cosHigh ) );
+
+        if ( InRange( Constants<FloatT>::PiOver2, i ) )
+        {
+            sinHigh = static_cast< FloatT >( 1 );
+        }
+        if ( InRange( ( static_cast< FloatT >( 3. ) / static_cast< FloatT >( 2. ) ) * Constants<FloatT>::Pi, i ) )
+        {
+            sinLow = static_cast< FloatT >( -1 );
+        }
+        if ( InRange( Constants<FloatT>::Pi, i ) )
+        {
+            cosLow = static_cast< FloatT >( -1 );
+        }
+        *sine = Interval( sinLow, sinHigh );
+        *cosine = Interval( cosLow, cosHigh );
+    }
+
+
+    /// <summary>
+	/// Calculates the quadratic roots for the equation ax^2 + bx + c = 0.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <param name="a">
+	/// The coefficient of x^2.
+    /// </param>
+    /// <param name="b">
+	/// The coefficient of x.
+    /// </param>
+    /// <param name="c">
+	/// The constant term.
+    /// </param>
+    /// <param name="t0">
+	/// The first root.
+    /// </param>
+    /// <param name="t1">
+	/// The second root.
+    /// </param>
+    /// <returns>
+	/// True if the roots were found, false otherwise.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] bool Quadratic( const Interval<FloatT>& a, const Interval<FloatT>& b, const Interval<FloatT>& c, Interval<FloatT>* t0, Interval<FloatT>* t1 )
+    {
+        // Find quadratic discriminant
+        auto discrim = DifferenceOfProducts( b, b, MulPow2( static_cast< FloatT >( 4 ), a ), c );
+        if ( discrim.LowerBound( ) < static_cast< FloatT >( 0 ) )
+        {
+            return false;
+        }
+        Interval<FloatT> floatRootDiscrim = Sqrt( discrim );
+
+        // Compute quadratic _t_ values
+        Interval<FloatT> q;
+        if ( ( FloatT )b < static_cast< FloatT >( 0 ) )
+        {
+            q = MulPow2( static_cast< FloatT >( -.5 ), b - floatRootDiscrim );
+        }
+        else
+        {
+            q = MulPow2( static_cast< FloatT >( -.5 ), b + floatRootDiscrim );
+        }
+        *t0 = q / a;
+        *t1 = c / q;
+        if ( t0->LowerBound( ) > t1->LowerBound( ) )
+        {
+            std::swap( *t0, *t1 );
+        }
+        return true;
+    }
+
+    /// <summary>
+	/// Calculates the sum of squares of a single interval.
+    /// </summary>
+    /// <typeparam name="FloatT">
+    /// A floating-point type.
+    /// </typeparam>
+    /// <param name="i">
+    /// The interval.
+    /// </param>
+    /// <returns>
+    /// The sum of squares of the interval.
+    /// </returns>
+    template<FloatingPointType FloatT>
+    inline [[nodiscard]] Interval<FloatT> SumSquares( const Interval<FloatT>& i )
+    {
+        return Sqr( i );
+    }
+
+    /// <summary>
+	/// Calculates the sum of squares of multiple intervals.
+    /// </summary>
+    /// <typeparam name="FloatT">
+	/// A floating-point type.
+    /// </typeparam>
+    /// <typeparam name="...Args">
+    /// A variadic list of floating-point types.
+    /// </typeparam>
+    /// <param name="i">
+    /// The first interval.
+    /// </param>
+    /// <param name="...args">
+    /// The additional intervals.
+    /// </param>
+    /// <returns>
+    /// The sum of squares of the intervals.
+    /// </returns>
+    template <FloatingPointType FloatT, FloatingPointType... Args>
+    inline [[nodiscard]] Interval<FloatT> SumSquares( const Interval<FloatT>& i, Args... args )
+    {
+        Interval ss = FMA( i, i, SumSquares( args... ) );
+        return Interval( std::max<FloatT>( 0, ss.LowerBound( ) ), ss.UpperBound( ) );
+    }
+
+    namespace Internal
+    {
+        /// <summary>
+		/// Converts a 16-bit half-precision floating-point number to a 32-bit single-precision floating-point number.
+        /// </summary>
+        /// <param name="value">
+        /// The 16-bit half-precision floating-point number.
+        /// </param>
+        /// <returns>
+        /// The 32-bit single-precision floating-point number.
+        /// </returns>
+        constexpr [[nodiscard]] float HalfToFloat( const UInt16 value )
+        {
+            constexpr UInt32 Magic = 113UL << 23UL;
+            constexpr UInt32 ShiftedExp = 0x7c00 << 13;
+
+            const UInt16 h = value;
+            UInt32 result = ( h & 0x7fff ) << 13;
+
+            const UInt32 exp = ShiftedExp & result;
+            result += ( 127 - 15 ) << 23;
+
+            if ( exp == ShiftedExp )
+            {
+                result += ( 128 - 16 ) << 23;
+            }
+            else if ( exp == 0 )
+            {
+                result += 1 << 23;
+                auto f = std::bit_cast< float >( result );
+                f -= std::bit_cast< float >( Magic );
+                result = std::bit_cast< UInt32 >( f );
+            }
+
+            result |= ( h & 0x8000 ) << 16;
+            return std::bit_cast< float >( result );
+        }
+
+        constexpr [[nodiscard]] UInt16 FloatToHalf( float value )
+        {
+            constexpr UInt32 FloatInfinity = 255UL << 23UL;
+            constexpr UInt32 HalfInfinity = 31UL << 23UL;
+            constexpr UInt32 Magic = 15UL << 23UL;
+            constexpr UInt32 SignMask = 0x80000000UL;
+            constexpr UInt32 RoundMask = ~0xfffUL;
+
+            UInt32 v = std::bit_cast< UInt32 >( value );
+
+            const UInt32 sign = v & SignMask;
+            v ^= sign;
+            UInt32 h = 0;
+            if ( v >= FloatInfinity )
+            {
+                h = ( v > FloatInfinity ) ? 0x7e00 : 0x7c00;
+            }
+            else
+            {
+                v &= RoundMask;
+                auto f = std::bit_cast< float >( v );
+                f *= std::bit_cast< float >( Magic );
+                v = std::bit_cast< UInt32 >( f );
+                v -= RoundMask;
+
+                if ( v > HalfInfinity )
+                {
+                    v = HalfInfinity;
+                }
+                h = v >> 13;
+            }
+
+            h |= sign >> 16;
+            return h;
+        }
+    }
+
+    /// <summary>
+	/// Represents a 16-bit half-precision floating-point number.
+    /// </summary>
+    class Half
+    {
+    public:
+        static constexpr UInt16 ExponentMask = 0b0111110000000000;
+        static constexpr UInt16 SignificandMask = 0b1111111111;
+        static constexpr UInt16 NegativeZero = 0b1000000000000000;
+        static constexpr UInt16 PositiveZero = 0;
+        static constexpr UInt16 NegativeInfinity = 0b1111110000000000;
+        static constexpr UInt16 PositiveInfinity = 0b0111110000000000;
+    private:
+        UInt16 value_ = 0;
+    public:
+        constexpr Half( ) noexcept = default;
+        constexpr Half( const Half& other ) noexcept = default;
+        constexpr Half& operator=( const Half& other ) noexcept = default;
+
+    private:
+        explicit constexpr Half( UInt16 value ) noexcept
+            : value_( value )
+        {
+        }
+    public:
+
+        explicit constexpr Half( float value ) noexcept
+            : value_( Internal::FloatToHalf( value ) )
+        {
+        }
+        explicit constexpr Half( double value ) noexcept
+            : Half( static_cast< float >( value ) )
+        {
+        }
+
+        static constexpr [[nodiscard]] Half FromBits( UInt16 value ) noexcept
+        {
+            return Half( value );
+        }
+
+        constexpr [[nodiscard]] UInt16 Bits( ) const noexcept
+        {
+            return value_;
+        }
+
+        explicit constexpr [[nodiscard]] operator float( ) const noexcept
+        {
+            return Internal::HalfToFloat( value_ );
+        }
+        explicit constexpr [[nodiscard]] operator double( ) const noexcept
+        {
+            return static_cast< double >( Internal::HalfToFloat( value_ ) );
+        }
+
+        constexpr [[nodiscard]] bool operator==( const Half& other ) const noexcept
+        {
+            if ( value_ == other.value_ )
+            {
+                return true;
+            }
+            return ( value_ == NegativeZero && other.value_ == PositiveZero ) || ( value_ == PositiveZero && other.value_ == NegativeZero );
+        }
+        constexpr [[nodiscard]] bool operator!=( const Half& other ) const noexcept
+        {
+            return !( *this == other );
+        }
+
+        constexpr [[nodiscard]] Half operator-( ) const noexcept
+        {
+            return Half( static_cast< UInt16 >( value_ ^ ( 1 << 15 ) ) );
+        }
+
+        constexpr [[nodiscard]] int Sign( ) const noexcept
+        {
+            return ( value_ >> 15 ) ? -1 : 1;
+        }
+
+        constexpr [[nodiscard]] bool IsInf( ) const noexcept
+        {
+            return value_ == PositiveInfinity || value_ == NegativeInfinity;
+        }
+
+        constexpr [[nodiscard]] bool IsNaN( ) const noexcept
+        {
+            return ( ( value_ & ExponentMask ) == ExponentMask &&
+                ( value_ & SignificandMask ) != 0 );
+        }
+
+
+        constexpr [[nodiscard]] Half NextUp( ) const noexcept
+        {
+            if ( IsInf( ) && Sign( ) == 1 )
+            {
+                return *this;
+            }
+
+            Half up = *this;
+            if ( up.value_ == NegativeZero )
+            {
+                up.value_ = PositiveZero;
+            }
+
+            if ( up.Sign( ) >= 0 )
+            {
+                ++up.value_;
+            }
+            else
+            {
+                --up.value_;
+            }
+            return up;
+        }
+
+        constexpr [[nodiscard]] Half NextDown( ) const noexcept
+        {
+            if ( IsInf( ) && Sign( ) == -1 )
+            {
+                return *this;
+            }
+
+            Half down = *this;
+            if ( down.value_ == PositiveZero )
+            {
+                down.value_ = NegativeZero;
+            }
+            if ( down.Sign( ) >= 0 )
+            {
+                --down.value_;
+            }
+            else
+            {
+                ++down.value_;
+            }
+            return down;
+        }
+    };
+}
+
+
+namespace std
+{
+    template<typename CharT>
+    struct formatter<Harlinn::Math::Half, CharT>
+    {
+        formatter<float, CharT> floatFormatter;
+        constexpr [[nodiscard]] auto parse( basic_format_parse_context<CharT>& ctx )
+        {
+            return floatFormatter.parse( ctx );
+        }
+
+        template <typename FormatContext>
+        [[nodiscard]] auto format( const Harlinn::Math::Half& half, FormatContext& ctx ) const
+        {
+            float v = static_cast< float >( half );
+            return floatFormatter.format( v, ctx );
+        }
+    };
+
+    template<typename CharT>
+    struct formatter<Harlinn::Math::Interval<float>, CharT>
+    {
+        constexpr [[nodiscard]] auto parse( basic_format_parse_context<CharT>& ctx )
+        {
+            return ctx.begin( );
+        }
+
+        template <typename FormatContext>
+        [[nodiscard]] auto format( const Harlinn::Math::Interval<float>& value, FormatContext& ctx ) const
+        {
+            if constexpr ( is_same_v<CharT, wchar_t> )
+            {
+                return std::format_to( ctx.out( ), L"[{}, {}]", value.LowerBound( ), value.UpperBound( ) );
+            }
+            else
+            {
+                return std::format_to( ctx.out( ), "[{}, {}]", value.LowerBound( ), value.UpperBound( ) );
+            }
+        }
+    };
+    template<typename CharT>
+    struct formatter<Harlinn::Math::Interval<double>, CharT>
+    {
+        constexpr [[nodiscard]] auto parse( basic_format_parse_context<CharT>& ctx )
+        {
+            return ctx.begin( );
+        }
+
+        template <typename FormatContext>
+        [[nodiscard]] auto format( const Harlinn::Math::Interval<double>& value, FormatContext& ctx ) const
+        {
+            if constexpr ( is_same_v<CharT, wchar_t> )
+            {
+                return std::format_to( ctx.out( ), L"[{}, {}]", value.LowerBound( ), value.UpperBound( ) );
+            }
+            else
+            {
+                return std::format_to( ctx.out( ), "[{}, {}]", value.LowerBound( ), value.UpperBound( ) );
+            }
+        }
+    };
+}
+
+#endif

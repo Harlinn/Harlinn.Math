@@ -1,0 +1,4 @@
+@PACKAGE_INIT@
+include(CMakeFindDependencyMacro)
+find_dependency(HarlinnCommon)
+include("${CMAKE_CURRENT_LIST_DIR}/HarlinnMathTargets.cmake")
