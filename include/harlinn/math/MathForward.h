@@ -22,7 +22,7 @@
 #define _USE_MATH_DEFINES 1
 #endif
 
-#include <Harlinn/Common/Utils.h>
+#include <harlinn/common/Utils.h>
 
 #include <cmath>
 #include <cfenv>

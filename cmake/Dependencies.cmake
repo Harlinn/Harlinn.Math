@@ -21,7 +21,7 @@ else()
     endif()
 endif()
 
-target_link_libraries(HarlinnMath INTERFACE HarlinnCommon)
+target_link_libraries(HarlinnMath INTERFACE Harlinn::Common)
 
 # ── Catch2 (tests only) ─────────────────────────────────────────
 if(BUILD_TESTING)

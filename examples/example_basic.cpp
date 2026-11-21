@@ -1,4 +1,4 @@
-#include <harlinn/math/math.h>
+#include <harlinn/math/Math.h>
 #include <iostream>
 
 int main()

@@ -19,7 +19,7 @@
 */
 
 #include "Integer.h"
-#include <Harlinn/Common/Utils.h>
+#include <harlinn/common/Utils.h>
 
 namespace Harlinn::Math
 {

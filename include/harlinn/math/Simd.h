@@ -22,7 +22,7 @@
 #define _USE_MATH_DEFINES 1
 #endif
 
-#include <Harlinn/Common/Utils.h>
+#include <harlinn/common/Utils.h>
 
 #include <cmath>
 #include <cfenv>
@@ -6554,7 +6554,7 @@ namespace Harlinn::Math::SIMD
         static SIMDType ModAngles( SIMDType v ) noexcept
         {
             constexpr Type Inv2PiValue = static_cast< Type >( 0.15915494309189533577 );
-            constexpr Type PiTimes2Value = static_cast< Type >( 2. * Constants::Pi );
+            constexpr Type PiTimes2Value = static_cast< Type >( 2. * Constants::Base::Pi );
             constexpr SIMDType Inv2Pi = { {Inv2PiValue,Inv2PiValue,Inv2PiValue,Inv2PiValue} };
             constexpr SIMDType PiTimes2 = { {PiTimes2Value,PiTimes2Value,PiTimes2Value,PiTimes2Value} };
 

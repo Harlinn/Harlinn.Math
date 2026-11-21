@@ -12960,17 +12960,37 @@ namespace Harlinn::Math
 
         template<SimpleSpanLike T>
             requires std::is_same_v<typename T::value_type, value_type>
-        static [[nodiscard]] MatrixData MakeData( const T& mat ) noexcept
+        [[nodiscard]] static MatrixData MakeData( const T& mat ) noexcept
         {
             MatrixData result{};
-            memcpy( result[ 0 ].data( ), mat.data( ), std::min( Size * Size, mat.size( ) ) * sizeof( value_type ) );
+            const auto count = std::min( Size * Size, mat.size( ) );
+            for ( size_t i = 0; i < count; ++i )
+            {
+                result[ i / Size ][ i % Size ] = mat.data( )[ i ];
+            }
             return result;
         }
 
-        static [[nodiscard]] MatrixData MakeData( const value_type mat[ Size ][ Size ] ) noexcept
+        [[nodiscard]] static MatrixData MakeData( const value_type ( &mat )[ Size ][ Size ] ) noexcept
         {
             MatrixData result{};
-            memcpy( result[ 0 ].data( ), &mat[ 0 ][ 0 ], Size * Size * sizeof( value_type ) );
+            for ( size_t i = 0; i < Size; ++i )
+            {
+                for ( size_t j = 0; j < Size; ++j )
+                {
+                    result[ i ][ j ] = mat[ i ][ j ];
+                }
+            }
+            return result;
+        }
+
+        [[nodiscard]] static MatrixData MakeData( const value_type ( &mat )[ Size * Size ] ) noexcept
+        {
+            MatrixData result{};
+            for ( size_t i = 0; i < Size * Size; ++i )
+            {
+                result[ i / Size ][ i % Size ] = mat[ i ];
+            }
             return result;
         }
 
@@ -12992,19 +13012,19 @@ namespace Harlinn::Math
         }
 
         SquareMatrix( const value_type( &mat )[ Size ][ Size ] )
-            : data_( *reinterpret_cast< const MatrixData* >( &mat[ 0 ][ 0 ] ) )
+            : data_( MakeData( mat ) )
         {
         }
         SquareMatrix( const value_type( &mat )[ Size * Size ] )
-            : data_( *reinterpret_cast< const MatrixData* >( &mat[ 0 ] ) )
+            : data_( MakeData( mat ) )
         {
         }
 
         template<SimpleSpanLike T>
             requires std::is_same_v<typename T::value_type, value_type>
         SquareMatrix( const T& mat )
+            : data_( MakeData( mat ) )
         {
-            memcpy( data_[ 0 ].data( ), mat.data( ), std::min( Size * Size, mat.size( ) ) * sizeof( value_type ) );
         }
 
         SquareMatrix( const Simd& simd ) noexcept

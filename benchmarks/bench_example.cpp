@@ -1,5 +1,5 @@
 #include <benchmark/benchmark.h>
-#include <harlinn/math/math.h>
+#include <harlinn/math/Math.h>
 
 static void BM_Placeholder(benchmark::State& state)
 {
