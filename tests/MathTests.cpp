@@ -78,11 +78,11 @@ namespace
             signed_ = fp_.Signed( );
 
             ceil_ = fp_.Ceil( );
-            fpceil_ = __ceil( v );
+            fpceil_ = std::ceil( v );
             trunc_ = fp_.Trunc( );
-            fptrunc_ = __trunc( v );
+            fptrunc_ = std::trunc( v );
             floor_ = fp_.Floor( );
-            fpfloor_ = __floor( v );
+            fpfloor_ = std::floor( v );
         }
     };
 
@@ -349,7 +349,7 @@ TEST_CASE("MathTests / OpenLibMIsNaNDoubleTest1", "[math][MathTests]")
     using FloatT = double;
     Generators::RandomGenerator<FloatT, 20000> generator;
     NumericTest test( "OpenLibMIsNaNDoubleTest1" );
-    auto success = test.Run( generator, std::isnan<FloatT>, []( auto x ) { return OpenLibM::isnan( x ) != 0; },
+    auto success = test.Run( generator, []( auto x ) { return std::isnan( x ); }, []( auto x ) { return OpenLibM::isnan( x ) != 0; },
         {
             std::numeric_limits<FloatT>::quiet_NaN( ),
             -std::numeric_limits<FloatT>::infinity( ),

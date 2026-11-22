@@ -27,6 +27,7 @@
 #include <cmath>
 #include <cfenv>
 #include <complex>
+#include <bit>
 
 #include <emmintrin.h>
 
@@ -222,7 +223,22 @@ namespace Harlinn::Math
     template<UnsignedIntegerType T>
     constexpr inline T FastAbs( T val ) noexcept;
     template<FloatingPointType T>
-    constexpr inline T FastAbs( T val ) noexcept;
+    constexpr inline T FastAbs( T val ) noexcept
+    {
+        if constexpr ( std::is_same_v<T, float> )
+        {
+            constexpr UInt32 Mask = 0x7FFFFFFFu;
+            const UInt32 bits = std::bit_cast<UInt32>( val ) & Mask;
+            return std::bit_cast<T>( bits );
+        }
+        else
+        {
+            static_assert( sizeof( UInt64 ) == sizeof( T ) );
+            constexpr UInt64 Mask = 0x7FFFFFFFFFFFFFFFull;
+            const UInt64 bits = std::bit_cast<UInt64>( val ) & Mask;
+            return std::bit_cast<T>( bits );
+        }
+    }
 
     template<SignedIntegerType T>
     constexpr inline bool SignBit( T val ) noexcept;

@@ -28,6 +28,10 @@ target_link_libraries(HarlinnMathTests PRIVATE
     Catch2::Catch2WithMain
 )
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(HarlinnMathTests PRIVATE -mavx2 -mfma)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
 include(Catch)
 catch_discover_tests(HarlinnMathTests)

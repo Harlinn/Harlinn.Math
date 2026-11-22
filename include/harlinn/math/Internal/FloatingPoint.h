@@ -62,12 +62,12 @@ namespace Harlinn::Math::Internal
     template <>
     struct ExponentBias<float>
     {
-        static constexpr UInt32 value = _FBIAS;
+        static constexpr UInt32 value = 127;
     };
     template <>
     struct ExponentBias<double>
     {
-        static constexpr UInt32 value = _DBIAS;
+        static constexpr UInt32 value = 1023;
     };
 
     template <FloatingPointType T>
@@ -245,14 +245,14 @@ namespace Harlinn::Math::Internal
 
         constexpr BiasedExponent& operator++( ) noexcept
         {
-            assert( *this != BiasedExponent( Exponent::inf( ) ) );
+            assert( *this != BiasedExponent( Exponent<FloatType>::Inf( ) ) );
             ++Base::value_;
             return *this;
         }
 
         constexpr BiasedExponent operator++( int ) noexcept
         {
-            assert( *this != BiasedExponent( Exponent::inf( ) ) );
+            assert( *this != BiasedExponent( Exponent<FloatType>::Inf( ) ) );
             BiasedExponent result = *this;
             ++Base::value_;
             return result;
@@ -260,14 +260,14 @@ namespace Harlinn::Math::Internal
 
         constexpr BiasedExponent& operator--( ) noexcept
         {
-            assert( *this != BiasedExponent( Exponent::subnormal( ) ) );
+            assert( *this != BiasedExponent( Exponent<FloatType>::SubNormal( ) ) );
             --Base::value_;
             return *this;
         }
 
         constexpr BiasedExponent operator--( int ) noexcept
         {
-            assert( *this != BiasedExponent( Exponent::subnormal( ) ) );
+            assert( *this != BiasedExponent( Exponent<FloatType>::SubNormal( ) ) );
             BiasedExponent result = *this;
             --Base::value_;
             return result;
@@ -347,9 +347,9 @@ namespace Harlinn::Math::Internal
 
         static constexpr StorageType MaxExponent = static_cast< UIntType >( MaxExponentValue ) << FractionWidth;
 
-        static constexpr StorageType FractionMask = FractionMask<ValueType, UIntType>;
+        static constexpr StorageType FractionMask = Harlinn::Common::FractionMask<ValueType, UIntType>;
         static constexpr StorageType SignificandMask = FractionMask;
-        static constexpr StorageType ExponentMask = ExponentMask<ValueType, UIntType>;
+        static constexpr StorageType ExponentMask = Harlinn::Common::ExponentMask<ValueType, UIntType>;
         static constexpr StorageType ExponentFractionMask = FractionMask | ExponentMask;
         static constexpr StorageType SignMask = ~( FractionMask | ExponentMask );
         static constexpr StorageType ExponentSignMask = ExponentMask | SignMask;
@@ -448,7 +448,7 @@ namespace Harlinn::Math::Internal
             {
                 // Implicit number bit will be removed by mask
                 result.SetSignificand( number );
-                result.setBiasedExponent( static_cast< StorageType >( ep + 1 ) );
+                result.SetBiasedExponent( BiasedExponentType( static_cast< Int32 >( ep + 1 ) ) );
             }
             else
             {

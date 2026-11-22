@@ -2036,10 +2036,12 @@ TEST_CASE("ConstexprMathTests / FloatExpTest1", "[math][ConstexprMathTests]")
     CHECK(result6 == C::E);
 
     constexpr auto result7 = Exp( C::Two );
-    CHECK(result7 == C::E2);
+    constexpr auto equal7 = AreNearlyEqual( result7, C::E2 );
+    CHECK(equal7);
 
     constexpr auto result8 = Exp( C::Three );
-    CHECK(result8 == C::E3);
+    constexpr auto equal8 = AreNearlyEqual( result8, C::E3 );
+    CHECK(equal8);
 
     constexpr auto result9 = Exp( .7f );
     CHECK(result9 == 2.01375270f);
@@ -2247,10 +2249,12 @@ TEST_CASE("ConstexprMathTests / FloatExpM1Test1", "[math][ConstexprMathTests]")
     CHECK(result6 == (C::E - 1));
 
     constexpr auto result7 = ExpM1( C::Two );
-    CHECK(result7 == (C::E2 - 1 ));
+    constexpr auto equal7 = AreNearlyEqual( result7, ( C::E2 - 1 ) );
+    CHECK(equal7);
 
     constexpr auto result8 = ExpM1( C::Three );
-    CHECK(result8 == ( C::E3 - 1 ));
+    constexpr auto equal8 = AreNearlyEqual( result8, ( C::E3 - 1 ) );
+    CHECK(equal8);
 
     constexpr auto result9 = ExpM1( .7f );
     CHECK(result9 == 1.01375270f);

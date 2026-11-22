@@ -4,6 +4,8 @@ include(FetchContent)
 set(HARLINN_COMMON_SOURCE_DIR "" CACHE PATH
     "Path to a local Harlinn.Common checkout (skip FetchContent)")
 
+set(_HARLINN_MATH_BUILD_TESTING ${BUILD_TESTING})
+set(BUILD_TESTING OFF)
 if(HARLINN_COMMON_SOURCE_DIR)
     if(NOT TARGET HarlinnCommon)
         add_subdirectory(
@@ -20,6 +22,8 @@ else()
         FetchContent_MakeAvailable(HarlinnCommon)
     endif()
 endif()
+set(BUILD_TESTING ${_HARLINN_MATH_BUILD_TESTING})
+unset(_HARLINN_MATH_BUILD_TESTING)
 
 target_link_libraries(HarlinnMath INTERFACE Harlinn::Common)
 

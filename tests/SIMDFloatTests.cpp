@@ -55,7 +55,7 @@ namespace
         size_t iterationCount = operationCount / Limits::Size;
         size_t remainingCount = operationCount % Limits::Size;
 
-        std::vector result;
+        std::vector<ValueT> result;
         result.resize( resultSize );
 
         const auto* p1 = v1.data( );
@@ -2439,7 +2439,7 @@ TEST_CASE("SIMDFloatTests / Dot1Test1", "[math][SIMDFloatTests]")
     ArrayType arg1( { 2.0f } );
     ArrayType arg2( { 3.0f } );
 
-    auto dotProduct = inner_product( arg1.begin( ), arg1.end( ), arg2.begin( ), 0.f );
+    auto dotProduct = std::inner_product( arg1.begin( ), arg1.end( ), arg2.begin( ), 0.f );
 
     ArrayType expected;
     std::fill( expected.begin( ), expected.end( ), dotProduct );
@@ -2459,7 +2459,7 @@ TEST_CASE("SIMDFloatTests / Dot2Test1", "[math][SIMDFloatTests]")
     ArrayType arg1( { 2.0f, -1.0f } );
     ArrayType arg2( { 3.0f, -2.0f } );
 
-    auto dotProduct = inner_product( arg1.begin( ), arg1.end( ), arg2.begin( ), 0.f );
+    auto dotProduct = std::inner_product( arg1.begin( ), arg1.end( ), arg2.begin( ), 0.f );
 
     ArrayType expected;
     std::fill( expected.begin( ), expected.end( ), dotProduct );
@@ -2479,7 +2479,7 @@ TEST_CASE("SIMDFloatTests / Dot3Test1", "[math][SIMDFloatTests]")
     ArrayType arg1( { 2.0f, -1.0f, 2.f } );
     ArrayType arg2( { 3.0f, -2.0f, 4.f } );
 
-    auto dotProduct = inner_product( arg1.begin( ), arg1.end( ), arg2.begin( ), 0.f );
+    auto dotProduct = std::inner_product( arg1.begin( ), arg1.end( ), arg2.begin( ), 0.f );
 
     ArrayType expected;
     std::fill( expected.begin( ), expected.end( ), dotProduct );
@@ -2499,7 +2499,7 @@ TEST_CASE("SIMDFloatTests / Dot4Test1", "[math][SIMDFloatTests]")
     ArrayType arg1( { 2.0f, -1.0f, 2.f, 1.0f } );
     ArrayType arg2( { 3.0f, -2.0f, 4.f, 1.2f } );
 
-    auto dotProduct = inner_product( arg1.begin( ), arg1.end( ), arg2.begin( ), 0.f );
+    auto dotProduct = std::inner_product( arg1.begin( ), arg1.end( ), arg2.begin( ), 0.f );
 
     ArrayType expected;
     std::fill( expected.begin( ), expected.end( ), dotProduct );
@@ -2519,7 +2519,7 @@ TEST_CASE("SIMDFloatTests / Dot5Test1", "[math][SIMDFloatTests]")
     ArrayType arg1( { 2.0f, -1.0f, 2.f, 1.0f, -5.f } );
     ArrayType arg2( { 3.0f, -2.0f, 4.f, 1.2f, 5.f } );
 
-    auto dotProduct = inner_product( arg1.begin( ), arg1.end( ), arg2.begin( ), 0.f );
+    auto dotProduct = std::inner_product( arg1.begin( ), arg1.end( ), arg2.begin( ), 0.f );
 
     ArrayType expected;
     std::fill( expected.begin( ), expected.end( ), dotProduct );
@@ -2539,7 +2539,7 @@ TEST_CASE("SIMDFloatTests / Dot6Test1", "[math][SIMDFloatTests]")
     ArrayType arg1( { 2.0f, -1.0f, 2.f, 1.0f, -5.f, 1.6f } );
     ArrayType arg2( { 3.0f, -2.0f, 4.f, 1.2f, 5.f, 1.7f } );
 
-    auto dotProduct = inner_product( arg1.begin( ), arg1.end( ), arg2.begin( ), 0.f );
+    auto dotProduct = std::inner_product( arg1.begin( ), arg1.end( ), arg2.begin( ), 0.f );
 
     ArrayType expected;
     std::fill( expected.begin( ), expected.end( ), dotProduct );
@@ -2562,7 +2562,7 @@ TEST_CASE("SIMDFloatTests / Dot7Test1", "[math][SIMDFloatTests]")
     ArrayType arg1( { 2.0f, -1.0f, 2.f, 1.0f, -5.f, 1.6f, 2.f } );
     ArrayType arg2( { 3.0f, -2.0f, 4.f, 1.2f, 5.f, 1.7f, 2.f } );
 
-    auto dotProduct = inner_product( arg1.begin( ), arg1.end( ), arg2.begin( ), 0.f );
+    auto dotProduct = std::inner_product( arg1.begin( ), arg1.end( ), arg2.begin( ), 0.f );
 
     ArrayType expected;
     std::fill( expected.begin( ), expected.end( ), dotProduct );
@@ -2585,7 +2585,7 @@ TEST_CASE("SIMDFloatTests / Dot8Test1", "[math][SIMDFloatTests]")
     ArrayType arg1( { 2.0f, -1.0f, 2.f, 1.0f, -5.f, 1.6f, 2.f, 3.f } );
     ArrayType arg2( { 3.0f, -2.0f, 4.f, 1.2f, 5.f, 1.7f, 2.f, 3.f } );
 
-    auto dotProduct = inner_product( arg1.begin( ), arg1.end( ), arg2.begin( ), 0.f );
+    auto dotProduct = std::inner_product( arg1.begin( ), arg1.end( ), arg2.begin( ), 0.f );
 
     ArrayType expected;
     std::fill( expected.begin( ), expected.end( ), dotProduct );
@@ -3189,7 +3189,7 @@ TEST_CASE("SIMDFloatTests / NextUpTest1", "[math][SIMDFloatTests]")
 
     auto sameValue = Traits::SameValue( nextUp, expectedNextUp1 );
 
-    __m128 expected = { .m128_u32{0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF} };
+    __m128 expected = _mm_castsi128_ps( _mm_set1_epi32( -1 ) );
 
     auto equal = Traits::ToArray( sameValue ) != Traits::ToArray( expected );
 
@@ -3217,7 +3217,7 @@ TEST_CASE("SIMDFloatTests / NextUpTest2", "[math][SIMDFloatTests]")
 
     auto sameValue = Traits::SameValue( nextUp, expectedNextUp1 );
 
-    __m128 expected = { .m128_u32{0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF} };
+    __m128 expected = _mm_castsi128_ps( _mm_set1_epi32( -1 ) );
 
     auto equal = Traits::ToArray( sameValue ) != Traits::ToArray( expected );
 
@@ -3245,7 +3245,7 @@ TEST_CASE("SIMDFloatTests / NextDownTest1", "[math][SIMDFloatTests]")
 
     auto sameValue = Traits::SameValue( nextDown, expectedNextDown1 );
 
-    __m128 expected = { .m128_u32{0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF} };
+    __m128 expected = _mm_castsi128_ps( _mm_set1_epi32( -1 ) );
 
     auto equal = Traits::ToArray( sameValue ) != Traits::ToArray( expected );
     
@@ -3273,7 +3273,7 @@ TEST_CASE("SIMDFloatTests / NextDownTest2", "[math][SIMDFloatTests]")
 
     auto sameValue = Traits::SameValue( nextDown, expectedNextDown1 );
 
-    __m128 expected = { .m128_u32{0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF} };
+    __m128 expected = _mm_castsi128_ps( _mm_set1_epi32( -1 ) );
 
     auto equal = Traits::ToArray( sameValue ) != Traits::ToArray( expected );
 

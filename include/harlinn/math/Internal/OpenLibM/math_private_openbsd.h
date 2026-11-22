@@ -234,7 +234,6 @@ do {								\
      * Functions internal to the math package, yet not static.
      */
     double __exp__D( double, double );
-    struct Double __log__D( double );
 
     constexpr inline double __p1evll( double x, const double* PP, int n )
     {

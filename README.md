@@ -6,14 +6,18 @@ A C++ math library.
 
 Harlinn.Math depends on [Harlinn.Common](https://github.com/Harlinn/Harlinn.Common).
 
-Harlinn.Math, [Harlinn.System](https://github.com/Harlinn/Harlinn.System), 
-and [Harlinn.Common](https://github.com/Harlinn/Harlinn.Common) are based on 
-code that was originally published as part of the Windows-only [Harlinn.Windows](https://github.com/Harlinn/Harlinn.Windows) repository.
+Harlinn.Math and [Harlinn.Common](https://github.com/Harlinn/Harlinn.Common) are based on 
+code that was originally published as part of my Windows-only [Harlinn.Windows](https://github.com/Harlinn/Harlinn.Windows) repository.
 
-The project is in its early stages. `Harlinn.Common` currently compiles 
-for all target platforms, but `Harlinn.Math` currently builds only on Windows.
+The project is in its early stages. 
 
-My plan is to support the latest Windows, Linux, and macOS versions available on GitHub-hosted runners.
+`Harlinn.Common` currently compiles for all target platforms.
+
+Tests compiles using MSVC, Clang, and GCC on Windows, but still needs some work before they succeed.
+
+So far only x64 builds are supported, but I plan to support ARM64 as well.
+
+My plan is to support the latest Windows, Linux, and MacOS versions.
 
 ## Build
 

@@ -46,6 +46,9 @@
 
 #include "math_private.h"
 
+#define HCC_CONCAT_IMPL(a, b) a##b
+#define HCC_CONCAT(a, b) HCC_CONCAT_IMPL(a, b)
+
 namespace Harlinn::Math::Internal::OpenLibM
 {
 #ifndef type
@@ -68,7 +71,7 @@ namespace Harlinn::Math::Internal::OpenLibM
  */
 
 	
-	namespace _CONCAT( fn, _internal )
+	namespace HCC_CONCAT( fn, _internal )
 	{
 		constexpr type dtype_min = DTYPE_MIN - static_cast< type >( 0.5 );
 		constexpr type dtype_max = DTYPE_MAX + static_cast< type >( 0.5 );
@@ -79,7 +82,7 @@ namespace Harlinn::Math::Internal::OpenLibM
 	constexpr inline dtype
 		fn( type x )
 	{
-		using namespace _CONCAT( fn, _internal );
+		using namespace HCC_CONCAT( fn, _internal );
 		if ( std::is_constant_evaluated( ) )
 		{
 			return static_cast< dtype >( roundit( x ) );
@@ -107,4 +110,7 @@ namespace Harlinn::Math::Internal::OpenLibM
 #undef DTYPE_MAX
 #undef fn
 }
+
+#undef HCC_CONCAT
+#undef HCC_CONCAT_IMPL
 
