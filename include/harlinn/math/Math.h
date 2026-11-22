@@ -30,7 +30,7 @@
 
 namespace Harlinn::Math
 {
-    template<typename ArthmeticT>
+    template<typename ArithmeticT>
     struct Constants : public std::false_type
     {};
 

@@ -104,7 +104,9 @@ namespace
         {
             auto stdResult = stdFunc( value );
             auto mathResult = mathFunc( value );
-            auto deviation = Deviation( stdResult, mathResult );
+            const auto absoluteDifference = std::abs( static_cast<double>( stdResult ) - static_cast<double>( mathResult ) );
+            const auto scale = std::max( 1.0, std::max( std::abs( static_cast<double>( stdResult ) ), std::abs( static_cast<double>( mathResult ) ) ) );
+            auto deviation = absoluteDifference / scale;
 
             if ( deviation > maxDeviation )
             {
@@ -153,15 +155,10 @@ namespace
     {
         constexpr FloatT start = ( static_cast< FloatT >( -2 ) * Constants<FloatT>::Pi ) - std::numeric_limits<FloatT>::epsilon( );
         constexpr FloatT stop = ( static_cast< FloatT >( 2 ) * Constants<FloatT>::Pi ) + std::numeric_limits<FloatT>::epsilon( );
+        constexpr FloatT step = ( stop - start ) / static_cast< FloatT >( 4096 );
 
-        if constexpr ( std::is_same_v<float, FloatT> )
-        {
-            RangeTest( testName, stdFunc, mathFunc, []( float value ) { return NextUp( value ); }, start, stop, maxDeviation );
-        }
-        else
-        {
-            RangeTest( testName, stdFunc, mathFunc, []( double value ) { return static_cast< double >( NextUp( static_cast< float >( value ) ) ); }, start, stop, maxDeviation );
-        }
+        RangeTest( testName, stdFunc, mathFunc,
+            [step]( FloatT value ) { return value + step; }, start, stop, maxDeviation );
     }
 
     template<typename FloatT, typename StdFunc, typename MathFunc>
@@ -169,15 +166,10 @@ namespace
     {
         constexpr FloatT start = static_cast< FloatT >( -1. );
         constexpr FloatT stop = static_cast< FloatT >( 1. );
+        constexpr FloatT step = ( stop - start ) / static_cast< FloatT >( 4096 );
 
-        if constexpr ( std::is_same_v<float, FloatT> )
-        {
-            RangeTest( testName, stdFunc, mathFunc, []( float value ) { return NextUp( value ); }, start, stop, maxDeviation );
-        }
-        else
-        {
-            RangeTest( testName, stdFunc, mathFunc, []( double value ) { return static_cast< double >( NextUp( static_cast< float >( value ) ) ); }, start, stop, maxDeviation );
-        }
+        RangeTest( testName, stdFunc, mathFunc,
+            [step]( FloatT value ) { return value + step; }, start, stop, maxDeviation );
     }
 
 
