@@ -27,10 +27,19 @@
 #include <cmath>
 #include <cfenv>
 #include <cstddef>
+#include <cstring>
 #include <immintrin.h>
 #include <array>
 #include <bit>
 #include <numbers>
+
+#if defined(__GNUC__) && defined(__AVX2__)
+#define HARLINN_MATH_FORCE_ALIGN_ARG_POINTER __attribute__((force_align_arg_pointer))
+#define HARLINN_MATH_FORCE_INLINE __attribute__((always_inline)) inline
+#else
+#define HARLINN_MATH_FORCE_ALIGN_ARG_POINTER
+#define HARLINN_MATH_FORCE_INLINE
+#endif
 
 namespace Harlinn::Math
 {
@@ -1603,7 +1612,7 @@ namespace Harlinn::Math::SIMD
             }
             else
             {
-                _mm256_storeu_si256( reinterpret_cast< __m128i* >( dest ), src );
+                _mm256_storeu_si256( reinterpret_cast< __m256i* >( dest ), src );
             }
         }
 
@@ -1799,7 +1808,7 @@ namespace Harlinn::Math::SIMD
             }
             else
             {
-                _mm256_storeu_si256( reinterpret_cast< __m128i* >( dest ), src );
+                _mm256_storeu_si256( reinterpret_cast< __m256i* >( dest ), src );
             }
         }
 
@@ -2160,9 +2169,10 @@ namespace Harlinn::Math::SIMD
         /// <param name="value2">The value to set in the 2nd position (index 1).</param>
         /// <param name="value1">The value to set in the 1st position (index 0).</param>
         /// <returns>A SIMD vector containing the specified values in the lower 5 positions, with the upper 3 positions set to zero.</returns>
-        static SIMDType Set( Type value5, Type value4, Type value3, Type value2, Type value1 ) noexcept requires ( N > 4 )
+        HARLINN_MATH_FORCE_ALIGN_ARG_POINTER HARLINN_MATH_FORCE_INLINE static SIMDType Set( Type value5, Type value4, Type value3, Type value2, Type value1 ) noexcept requires ( N > 4 )
         {
-            return _mm256_set_epi32( 0, 0, 0, value5, value4, value3, value2, value1 );
+            const std::array<Type, 8> values{ value1, value2, value3, value4, value5, 0, 0, 0 };
+            return _mm256_loadu_si256( reinterpret_cast< const __m256i* >( values.data( ) ) );
         }
 
         /// <summary>
@@ -2175,9 +2185,12 @@ namespace Harlinn::Math::SIMD
         /// <param name="value2">The value to set in the second position.</param>
         /// <param name="value1">The value to set in the first position.</param>
         /// <returns>A SIMD vector containing the specified values in reverse order, with leading elements set to zero.</returns>
-        static SIMDType Set( Type value6, Type value5, Type value4, Type value3, Type value2, Type value1 ) noexcept requires ( N > 5 )
+        HARLINN_MATH_FORCE_ALIGN_ARG_POINTER HARLINN_MATH_FORCE_INLINE static SIMDType Set( Type value6, Type value5, Type value4, Type value3, Type value2, Type value1 ) noexcept requires ( N > 5 )
         {
-            return _mm256_set_epi32( 0, 0, value6, value5, value4, value3, value2, value1 );
+            const std::array<Type, 8> values{ value1, value2, value3, value4, value5, value6, 0, 0 };
+            SIMDType result;
+            std::memcpy( &result, values.data( ), sizeof( result ) );
+            return result;
         }
 
         /// <summary>
@@ -2191,9 +2204,12 @@ namespace Harlinn::Math::SIMD
         /// <param name="value2">The value for the second element of the vector.</param>
         /// <param name="value1">The value for the first element of the vector.</param>
         /// <returns>A SIMD vector with elements set to the specified values, with the eighth element initialized to zero.</returns>
-        static SIMDType Set( Type value7, Type value6, Type value5, Type value4, Type value3, Type value2, Type value1 ) noexcept requires ( N > 6 )
+        HARLINN_MATH_FORCE_ALIGN_ARG_POINTER HARLINN_MATH_FORCE_INLINE static SIMDType Set( Type value7, Type value6, Type value5, Type value4, Type value3, Type value2, Type value1 ) noexcept requires ( N > 6 )
         {
-            return _mm256_set_epi32( 0, value7, value6, value5, value4, value3, value2, value1 );
+            const std::array<Type, 8> values{ value1, value2, value3, value4, value5, value6, value7, 0 };
+            SIMDType result;
+            std::memcpy( &result, values.data( ), sizeof( result ) );
+            return result;
         }
 
         /// <summary>
@@ -2348,7 +2364,7 @@ namespace Harlinn::Math::SIMD
             requires ( NA >= N )
         static SIMDType Load( const std::array<Type, NA>& src ) noexcept
         {
-            return Load( src.data( ) );
+            return UnalignedLoad( src.data( ) );
         }
 
 
@@ -2374,16 +2390,9 @@ namespace Harlinn::Math::SIMD
         /// </summary>
         /// <param name="dest">Pointer to the aligned destination memory address where the SIMD vector will be stored.</param>
         /// <param name="src">The SIMD vector to store.</param>
-        static void Store( Type* dest, SIMDType src ) noexcept
+        static void Store( Type* dest, const SIMDType& src ) noexcept
         {
-            if constexpr ( UseShortSIMDType )
-            {
-                _mm_store_si128( reinterpret_cast< __m128i* >( dest ), src );
-            }
-            else
-            {
-                _mm256_store_si256( reinterpret_cast< __m256i* >( dest ), src );
-            }
+            UnalignedStore( dest, src );
         }
 
         /// <summary>
@@ -2391,7 +2400,7 @@ namespace Harlinn::Math::SIMD
         /// </summary>
         /// <param name="dest">Pointer to the destination memory location where the SIMD data will be stored. Does not need to be aligned.</param>
         /// <param name="src">The SIMD register value to store to memory.</param>
-        static void UnalignedStore( Type* dest, SIMDType src ) noexcept
+        static void UnalignedStore( Type* dest, const SIMDType& src ) noexcept
         {
             if constexpr ( UseShortSIMDType )
             {
@@ -2399,7 +2408,7 @@ namespace Harlinn::Math::SIMD
             }
             else
             {
-                _mm256_storeu_si256( reinterpret_cast< __m128i* >( dest ), src );
+                std::memcpy( dest, &src, sizeof( src ) );
             }
         }
 
@@ -2434,7 +2443,7 @@ namespace Harlinn::Math::SIMD
         /// An array containing the lower <c>N</c> elements
         /// of <c>v</c>.
         /// </returns>
-        static ArrayType ToArray( SIMDType src ) noexcept
+        static ArrayType ToArray( const SIMDType& src ) noexcept
         {
             if constexpr ( N == SIMDTypeCapacity )
             {
@@ -2743,7 +2752,7 @@ namespace Harlinn::Math::SIMD
         /// You must control the range of values operated upon to prevent undetected overflow conditions.
         /// </remarks>
         /// <returns>Result of the addition operation.</returns>
-        static SIMDType Add( SIMDType lhs, SIMDType rhs ) noexcept
+        static SIMDType Add( const SIMDType& lhs, const SIMDType& rhs ) noexcept
         {
             if constexpr ( UseShortSIMDType )
             {
@@ -3060,14 +3069,7 @@ namespace Harlinn::Math::SIMD
         /// <param name="src">The SIMD vector to store.</param>
         static void Store( Type* dest, SIMDType src ) noexcept
         {
-            if constexpr ( UseShortSIMDType )
-            {
-                _mm_store_si128( reinterpret_cast< __m128i* >( dest ), src );
-            }
-            else
-            {
-                _mm256_store_si256( reinterpret_cast< __m128i* >( dest ), src );
-            }
+            UnalignedStore( dest, src );
         }
 
         /// <summary>
@@ -3083,7 +3085,7 @@ namespace Harlinn::Math::SIMD
             }
             else
             {
-                _mm256_storeu_si256( reinterpret_cast< __m128i* >( dest ), src );
+                _mm256_storeu_si256( reinterpret_cast< __m256i* >( dest ), src );
             }
         }
 
@@ -4125,7 +4127,7 @@ namespace Harlinn::Math::SIMD
             requires ( NA >= N )
         static SIMDType Load( const std::array<Type, NA>& src ) noexcept
         {
-            return Load( src.data( ) );
+            return UnalignedLoad( src.data( ) );
         }
 
 
@@ -4226,14 +4228,7 @@ namespace Harlinn::Math::SIMD
         /// </remarks>
         static void Store( Type* dest, SIMDType src ) noexcept
         {
-            if constexpr ( UseShortSIMDType )
-            {
-                _mm_store_ps( dest, src );
-            }
-            else
-            {
-                _mm256_store_ps( dest, src );
-            }
+            UnalignedStore( dest, src );
         }
 
         /// <summary>
@@ -9180,7 +9175,7 @@ namespace Harlinn::Math::SIMD
             requires ( NA >= N )
         static SIMDType Load( const std::array<Type, NA>& src ) noexcept
         {
-            return Load( src.data( ) );
+            return UnalignedLoad( src.data( ) );
         }
 
         static SIMDType UnalignedLoad( const Type* src ) noexcept
@@ -9198,14 +9193,7 @@ namespace Harlinn::Math::SIMD
 
         static void Store( Type* dest, SIMDType src ) noexcept
         {
-            if constexpr ( UseShortSIMDType )
-            {
-                _mm_store_pd( dest, src );
-            }
-            else
-            {
-                _mm256_store_pd( dest, src );
-            }
+            UnalignedStore( dest, src );
         }
         static void UnalignedStore( Type* dest, SIMDType src ) noexcept
         {

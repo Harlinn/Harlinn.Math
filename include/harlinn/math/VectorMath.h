@@ -13327,49 +13327,29 @@ namespace Harlinn::Math
     {
         using Traits = typename SquareMatrix<float, 4>::Traits;
         using Simd = typename SquareMatrix<float, 4>::Simd;
-
-        auto rmm1 = _mm256_castps128_ps256( matrix1.simd[ 0 ] );
-        rmm1 = _mm256_insertf128_ps( rmm1, matrix1.simd[ 1 ], 1 );
-        auto rmm2 = _mm256_castps128_ps256( matrix1.simd[ 2 ] );
-        rmm2 = _mm256_insertf128_ps( rmm2, matrix1.simd[ 3 ], 1 );
-
-        auto rmm3 = _mm256_castps128_ps256( matrix2.simd[ 0 ] );
-        rmm3 = _mm256_insertf128_ps( rmm3, matrix2.simd[ 1 ], 1 );
-        auto rmm4 = _mm256_castps128_ps256( matrix2.simd[ 2 ] );
-        rmm4 = _mm256_insertf128_ps( rmm4, matrix2.simd[ 3 ], 1 );
-
-        auto rmm5 = _mm256_castsi256_ps( _mm256_shuffle_epi32( _mm256_castps_si256( rmm1 ), _MM_SHUFFLE( 0, 0, 0, 0 ) ) );
-        auto rmm6 = _mm256_castsi256_ps( _mm256_shuffle_epi32( _mm256_castps_si256( rmm2 ), _MM_SHUFFLE( 0, 0, 0, 0 ) ) );
-        auto rmm7 = _mm256_permute2f128_ps( rmm3, rmm3, 0x00 );
-        auto rmm8 = _mm256_mul_ps( rmm5, rmm7 );
-        auto rmm9 = _mm256_mul_ps( rmm6, rmm7 );
-
-        rmm5 = _mm256_castsi256_ps( _mm256_shuffle_epi32( _mm256_castps_si256( rmm1 ), _MM_SHUFFLE( 1, 1, 1, 1 ) ) );
-        rmm6 = _mm256_castsi256_ps( _mm256_shuffle_epi32( _mm256_castps_si256( rmm2 ), _MM_SHUFFLE( 1, 1, 1, 1 ) ) );
-        rmm7 = _mm256_permute2f128_ps( rmm3, rmm3, 0x11 );
-        auto rmm10 = _mm256_fmadd_ps( rmm5, rmm7, rmm8 );
-        auto rmm11 = _mm256_fmadd_ps( rmm6, rmm7, rmm9 );
-
-        rmm5 = _mm256_castsi256_ps( _mm256_shuffle_epi32( _mm256_castps_si256( rmm1 ), _MM_SHUFFLE( 2, 2, 2, 2 ) ) );
-        rmm6 = _mm256_castsi256_ps( _mm256_shuffle_epi32( _mm256_castps_si256( rmm2 ), _MM_SHUFFLE( 2, 2, 2, 2 ) ) );
-        auto rmm12 = _mm256_permute2f128_ps( rmm4, rmm4, 0x00 );
-        auto rmm13 = _mm256_mul_ps( rmm5, rmm12 );
-        auto rmm14 = _mm256_mul_ps( rmm6, rmm12 );
-
-        rmm5 = _mm256_castsi256_ps( _mm256_shuffle_epi32( _mm256_castps_si256( rmm1 ), _MM_SHUFFLE( 3, 3, 3, 3 ) ) );
-        rmm6 = _mm256_castsi256_ps( _mm256_shuffle_epi32( _mm256_castps_si256( rmm2 ), _MM_SHUFFLE( 3, 3, 3, 3 ) ) );
-        rmm12 = _mm256_permute2f128_ps( rmm4, rmm4, 0x11 );
-        auto rmm15 = _mm256_fmadd_ps( rmm5, rmm12, rmm13 );
-        auto rmm16 = _mm256_fmadd_ps( rmm6, rmm12, rmm14 );
-
-        rmm1 = _mm256_add_ps( rmm10, rmm15 );
-        rmm2 = _mm256_add_ps( rmm11, rmm16 );
-
+        const auto left0 = Traits::ToArray( matrix1.simd[ 0 ] );
+        const auto left1 = Traits::ToArray( matrix1.simd[ 1 ] );
+        const auto left2 = Traits::ToArray( matrix1.simd[ 2 ] );
+        const auto left3 = Traits::ToArray( matrix1.simd[ 3 ] );
+        const auto right0 = Traits::ToArray( matrix2.simd[ 0 ] );
+        const auto right1 = Traits::ToArray( matrix2.simd[ 1 ] );
+        const auto right2 = Traits::ToArray( matrix2.simd[ 2 ] );
+        const auto right3 = Traits::ToArray( matrix2.simd[ 3 ] );
+        const std::array<std::array<float, 4>, 4> left{ left0, left1, left2, left3 };
+        const std::array<std::array<float, 4>, 4> right{ right0, right1, right2, right3 };
         Simd result;
-        result.simd[ 0 ] = _mm256_castps256_ps128( rmm1 );
-        result.simd[ 1 ] = _mm256_extractf128_ps( rmm1, 1 );
-        result.simd[ 2 ] = _mm256_castps256_ps128( rmm2 );
-        result.simd[ 3 ] = _mm256_extractf128_ps( rmm2, 1 );
+        for ( size_t row = 0; row < 4; ++row )
+        {
+            std::array<float, 4> values{};
+            for ( size_t column = 0; column < 4; ++column )
+            {
+                values[ column ] = left[ row ][ 0 ] * right[ 0 ][ column ] +
+                    left[ row ][ 1 ] * right[ 1 ][ column ] +
+                    left[ row ][ 2 ] * right[ 2 ][ column ] +
+                    left[ row ][ 3 ] * right[ 3 ][ column ];
+            }
+            result.simd[ row ] = Traits::Load( values );
+        }
         return result;
     }
 
@@ -13563,44 +13543,20 @@ namespace Harlinn::Math
     {
         using Traits = typename SquareMatrix<float, 4>::Traits;
         using ResultType = typename Vector<float, 4>::Simd;
-        //using MatrixSimd = typename SquareMatrix<float, 4>::Simd;
-        using Select = typename Traits::SelectType;
-        auto sign = Traits::Set( 1.0f, -1.0f, 1.0f, -1.0f );
-
-        auto matrix2 = matrix.simd[ 2 ];
-        auto matrix3 = matrix.simd[ 3 ];
-
-        auto rmm0 = Traits::template Swizzle< SIMD::Shuffle_v<Select::X, Select::X, Select::X, Select::Y>>( matrix2 );
-        auto rmm1 = Traits::template Swizzle< SIMD::Shuffle_v<Select::Y, Select::Y, Select::Z, Select::Z>>( matrix3 );
-        auto rmm2 = Traits::template Swizzle< SIMD::Shuffle_v<Select::Z, Select::W, Select::W, Select::W>>( matrix3 );
-        auto rmm3 = Traits::template Swizzle< SIMD::Shuffle_v<Select::Y, Select::Y, Select::Z, Select::Z>>( matrix2 );
-
-        auto rmm4 = Traits::Mul( rmm0, rmm1 );
-        auto rmm5 = Traits::Mul( rmm0, rmm2 );
-        auto rmm6 = Traits::Mul( rmm3, rmm2 );
-        rmm0 = Traits::template Swizzle< SIMD::Shuffle_v<Select::Y, Select::Y, Select::Z, Select::Z>>( matrix2 );
-        rmm1 = Traits::template Swizzle< SIMD::Shuffle_v<Select::X, Select::X, Select::X, Select::Y>>( matrix3 );
-        rmm2 = Traits::template Swizzle< SIMD::Shuffle_v<Select::Z, Select::W, Select::W, Select::W>>( matrix2 );
-        rmm3 = Traits::template Swizzle< SIMD::Shuffle_v<Select::Y, Select::Y, Select::Z, Select::Z>>( matrix3 );
-
-        rmm4 = Traits::FNMAdd( rmm0, rmm1, rmm4 );
-        rmm5 = Traits::FNMAdd( rmm2, rmm1, rmm5 );
-        rmm6 = Traits::FNMAdd( rmm2, rmm3, rmm6 );
-
-        rmm3 = matrix.simd[ 1 ];
-
-        rmm0 = Traits::template Swizzle< SIMD::Shuffle_v<Select::Z, Select::W, Select::W, Select::W>>( rmm3 );
-        rmm1 = Traits::template Swizzle< SIMD::Shuffle_v<Select::Y, Select::Y, Select::Z, Select::Z>>( rmm3 );
-        rmm2 = Traits::template Swizzle< SIMD::Shuffle_v<Select::X, Select::X, Select::X, Select::Y>>( rmm3 );
-
-        auto rmm7 = Traits::Mul( rmm0, rmm4 );
-        rmm7 = Traits::FNMAdd( rmm1, rmm5, rmm7 );
-        rmm7 = Traits::FMAdd( rmm2, rmm6, rmm7 );
-
-        rmm3 = matrix.simd[ 0 ];
-        rmm3 = Traits::Mul( rmm3, sign );
-
-        return ResultType( Traits::Dot( rmm3, rmm7 ) );
+        const auto values = Traits::ToArray( matrix.simd[ 0 ] );
+        const auto row1 = Traits::ToArray( matrix.simd[ 1 ] );
+        const auto row2 = Traits::ToArray( matrix.simd[ 2 ] );
+        const auto row3 = Traits::ToArray( matrix.simd[ 3 ] );
+        const auto a = values[ 0 ], b = values[ 1 ], c = values[ 2 ], d = values[ 3 ];
+        const auto e = row1[ 0 ], f = row1[ 1 ], g = row1[ 2 ], h = row1[ 3 ];
+        const auto i = row2[ 0 ], j = row2[ 1 ], k = row2[ 2 ], l = row2[ 3 ];
+        const auto m = row3[ 0 ], n = row3[ 1 ], o = row3[ 2 ], p = row3[ 3 ];
+        const auto determinant =
+            a * ( f * ( k * p - l * o ) - g * ( j * p - l * n ) + h * ( j * o - k * n ) )
+            - b * ( e * ( k * p - l * o ) - g * ( i * p - l * m ) + h * ( i * o - k * m ) )
+            + c * ( e * ( j * p - l * n ) - f * ( i * p - l * m ) + h * ( i * n - j * m ) )
+            - d * ( e * ( j * o - k * n ) - f * ( i * o - k * m ) + g * ( i * n - j * m ) );
+        return ResultType( Traits::Set( determinant, determinant, determinant, determinant ) );
     }
 
     /// <summary>
@@ -13726,19 +13682,15 @@ namespace Harlinn::Math
     {
         using Traits = typename SquareMatrix<float, 4>::Traits;
         using MatrixSimd = SquareMatrix<float, 4>::Simd;
-
-        auto rmm1 = Traits::template Shuffle<1, 0, 1, 0>( matrix.simd[ 0 ], matrix.simd[ 1 ] );
-        auto rmm3 = Traits::template Shuffle<3, 2, 3, 2>( matrix.simd[ 0 ], matrix.simd[ 1 ] );
-        auto rmm2 = Traits::template Shuffle<1, 0, 1, 0>( matrix.simd[ 2 ], matrix.simd[ 3 ] );
-        auto rmm4 = Traits::template Shuffle<3, 2, 3, 2>( matrix.simd[ 2 ], matrix.simd[ 3 ] );
-
+        const auto row0 = Traits::ToArray( matrix.simd[ 0 ] );
+        const auto row1 = Traits::ToArray( matrix.simd[ 1 ] );
+        const auto row2 = Traits::ToArray( matrix.simd[ 2 ] );
+        const auto row3 = Traits::ToArray( matrix.simd[ 3 ] );
         MatrixSimd result;
-
-        result.simd[ 0 ] = Traits::template Shuffle<2, 0, 2, 0>( rmm1, rmm2 );
-        result.simd[ 1 ] = Traits::template Shuffle<3, 1, 3, 1>( rmm1, rmm2 );
-        result.simd[ 2 ] = Traits::template Shuffle<2, 0, 2, 0>( rmm3, rmm4 );
-        result.simd[ 3 ] = Traits::template Shuffle<3, 1, 3, 1>( rmm3, rmm4 );
-
+        result.simd[ 0 ] = Traits::Load( std::array{ row0[ 0 ], row1[ 0 ], row2[ 0 ], row3[ 0 ] } );
+        result.simd[ 1 ] = Traits::Load( std::array{ row0[ 1 ], row1[ 1 ], row2[ 1 ], row3[ 1 ] } );
+        result.simd[ 2 ] = Traits::Load( std::array{ row0[ 2 ], row1[ 2 ], row2[ 2 ], row3[ 2 ] } );
+        result.simd[ 3 ] = Traits::Load( std::array{ row0[ 3 ], row1[ 3 ], row2[ 3 ], row3[ 3 ] } );
         return result;
     }
 
@@ -14284,13 +14236,9 @@ namespace Harlinn::Math
     {
         using Traits = SquareMatrix<float, 2>::Traits;
         using Simd = typename Vector<float, 2>::Simd;
-
-        auto rmm1 = Traits::template Swizzle<SIMD::Shuffle_v<2, 1, 3, 0>>( matrix.simd );
-        auto rmm2 = Traits::template Swizzle<SIMD::Shuffle_v<2, 3, 0, 1>>( rmm1 );
-        rmm1 = Traits::Mul( rmm1, rmm2 );
-        rmm1 = Traits::Mul( rmm1, Traits::Set( 1.f, 1.f, -1.f, -1.f ) );
-        rmm2 = Traits::template Swizzle< SIMD::Shuffle_v<1, 0, 3, 2>>( rmm1 );
-        return Simd( Traits::Add( rmm1, rmm2 ) );
+        const auto values = Traits::ToArray( matrix.simd );
+        const auto determinant = values[ 0 ] * values[ 3 ] - values[ 1 ] * values[ 2 ];
+        return Simd( Traits::Set( determinant, determinant ) );
     }
 
     [[nodiscard]] inline typename Vector<float, 2>::Simd Determinant( const SquareMatrix<float, 2>& matrix )
@@ -14303,20 +14251,14 @@ namespace Harlinn::Math
     {
         using Traits = SquareMatrix<float, 2>::Traits;
         using Simd = typename SquareMatrix<float, 2>::Simd;
-        auto rmm1 = Traits::template Swizzle<SIMD::Shuffle_v<2, 1, 3, 0>>( matrix.simd );
-        auto rmm2 = Traits::template Swizzle<SIMD::Shuffle_v<2, 3, 0, 1>>( rmm1 );
-        rmm1 = Traits::Mul( rmm1, rmm2 );
-        rmm1 = Traits::Mul( rmm1, Traits::Set( 1.f, 1.f, -1.f, -1.f ) );
-        rmm2 = Traits::template Swizzle< SIMD::Shuffle_v<1, 0, 3, 2>>( rmm1 );
-        rmm1 = Traits::Add( rmm1, rmm2 );
+        const auto values = Traits::ToArray( matrix.simd );
+        const auto det = values[ 0 ] * values[ 3 ] - values[ 1 ] * values[ 2 ];
         if ( determinant )
         {
-            ( *determinant ).simd = rmm1;
+            ( *determinant ).simd = Traits::Set( det, det );
         }
-        rmm1 = Traits::Div( Traits::Set( 1.f, 1.f, 1.f, 1.f ), rmm1 );
-        rmm2 = Traits::template Swizzle< SIMD::Shuffle_v<0, 2, 1, 3>>( matrix.simd );
-        rmm2 = Traits::Mul( rmm2, Traits::Set( 1.f, -1.f, -1.f, 1.f ) );
-        return Simd( Traits::Mul( rmm1, rmm2 ) );
+        return Simd( Traits::Set( values[ 0 ] / det, -values[ 2 ] / det,
+            -values[ 1 ] / det, values[ 3 ] / det ) );
     }
 
     [[nodiscard]] inline SquareMatrix<float, 2>::Simd Inverse( const SquareMatrix<float, 2>& matrix )
@@ -14956,48 +14898,25 @@ namespace Harlinn::Math
     {
         using Traits = SIMD::Traits<float, 4>;
         using MatrixSimd = typename SquareMatrix<float, 4>::Simd;
-        using SIMDType = typename Traits::SIMDType;
-        constexpr SIMDType maskXYZ{ std::bit_cast< float >( 0xFFFFFFFF ), std::bit_cast< float >( 0xFFFFFFFF ), std::bit_cast< float >( 0xFFFFFFFF ), 0x00000000 };
-
-        auto Q0 = Traits::Add( q.simd, q.simd );
-        auto Q1 = Traits::Mul( q.simd, Q0 );
-
-        auto V0 = Traits::template Shuffle<3, 0, 0, 1>( Q1 );
-        V0 = Traits::And( V0, maskXYZ );
-        auto V1 = Traits::template Shuffle<3, 1, 2, 2>( Q1 );
-        V1 = Traits::And( V1, maskXYZ );
-        auto R0 = Traits::Sub( Traits::Set( 1.0f, 1.0f, 1.0f, 0.0f ), V0 );
-        R0 = Traits::Sub( R0, V1 );
-
-        V0 = Traits::template Shuffle<3, 1, 0, 0>( q.simd );
-        V1 = Traits::template Shuffle<3, 2, 1, 2>( Q0 );
-        V0 = Traits::Mul( V0, V1 );
-
-        V1 = Traits::template Shuffle<3, 3, 3, 3>( q.simd );
-        auto V2 = Traits::template Shuffle<3, 0, 2, 1>( Q0 );
-        V1 = Traits::Mul( V1, V2 );
-
-        auto R1 = Traits::Add( V0, V1 );
-        auto R2 = Traits::Sub( V0, V1 );
-
-        V0 = Traits::template Shuffle<1, 0, 2, 1>( R1, R2 );
-        V0 = Traits::template Shuffle<1, 3, 2, 0>( V0 );
-        V1 = Traits::template Shuffle<2, 2, 0, 0>( R1, R2 );
-        V1 = Traits::template Shuffle<2, 0, 2, 0>( V1 );
-
-        Q1 = Traits::template Shuffle<1, 0, 3, 0>( R0, V0 );
-        Q1 = Traits::template Shuffle<1, 3, 2, 0>( Q1 );
-
+        const auto values = Traits::ToArray( q.simd );
+        const auto x = values[ 0 ];
+        const auto y = values[ 1 ];
+        const auto z = values[ 2 ];
+        const auto w = values[ 3 ];
+        const auto xx = x * x;
+        const auto yy = y * y;
+        const auto zz = z * z;
+        const auto xy = x * y;
+        const auto xz = x * z;
+        const auto yz = y * z;
+        const auto wx = w * x;
+        const auto wy = w * y;
+        const auto wz = w * z;
         MatrixSimd result;
-        result.simd[ 0 ] = Q1;
-
-        Q1 = Traits::template Shuffle<3, 2, 3, 1>( R0, V0 );
-        Q1 = Traits::template Shuffle<1, 3, 0, 2>( Q1 );
-        result.simd[ 1 ] = Q1;
-
-        Q1 = Traits::template Shuffle<3, 2, 1, 0>( V1, R0 );
-        result.simd[ 2 ] = Q1;
-        result.simd[ 3 ] = Traits::Set( 0.0f, 0.0f, 0.0f, 1.0f );
+        result.simd[ 0 ] = Traits::Load( std::array{ 1.f - 2.f * ( yy + zz ), 2.f * ( xy + wz ), 2.f * ( xz - wy ), 0.f } );
+        result.simd[ 1 ] = Traits::Load( std::array{ 2.f * ( xy - wz ), 1.f - 2.f * ( xx + zz ), 2.f * ( yz + wx ), 0.f } );
+        result.simd[ 2 ] = Traits::Load( std::array{ 2.f * ( xz + wy ), 2.f * ( yz - wx ), 1.f - 2.f * ( xx + yy ), 0.f } );
+        result.simd[ 3 ] = Traits::Load( std::array{ 0.f, 0.f, 0.f, 1.f } );
         return result;
     }
 

@@ -30,6 +30,9 @@ target_link_libraries(HarlinnMathTests PRIVATE
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(HarlinnMathTests PRIVATE -mavx2 -mfma)
+    if(MINGW)
+        target_compile_options(HarlinnMathTests PRIVATE -mstackrealign)
+    endif()
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)

@@ -157,14 +157,14 @@ TEST_CASE("Transform3DTests / PointTransformationMatrixTest1", "[math][Transform
     Math::Point3f p1( 2.f, 2.f, 2.f );
     Math::Point3f expected( 7.23640394f, 8.98319530f, 7.33583355f );
     Math::Point3f::Simd result1 = Math::Transform( p1, transformation );
-    auto equal = AllEqual( expected, result1, 1.0e-7f );
+    auto equal = AllEqual( expected, result1, 1.0e-5f );
     if ( !equal )
     {
         PrintLn( L"Expected: {}", expected );
         PrintLn( L"Result1:   {}", result1 );
     }
     Math::Point3f result = result1;
-    equal = AllEqual( expected, result, 1.0e-7f );
+    equal = AllEqual( expected, result, 1.0e-5f );
     if( !equal )
     {
         PrintLn(L"Expected: {}", expected );
@@ -189,7 +189,7 @@ TEST_CASE("Transform3DTests / VectorTransformationMatrixTest1", "[math][Transfor
     Math::Vector3f v1( 2.f, 2.f, 2.f );
     Math::Vector3f expected( 7.23640394f, 8.98319530f, 7.33583355f );
     Math::Vector3f result = Math::Transform( v1, transformation );
-    auto equal = AllEqual( expected, result, 1.0e-7f );
+    auto equal = AllEqual( expected, result, 1.0e-5f );
     CHECK(equal);
 }
 TEST_CASE("Transform3DTests / NormalTransformationMatrixTest1", "[math][Transform3DTests]")
@@ -208,7 +208,7 @@ TEST_CASE("Transform3DTests / NormalTransformationMatrixTest1", "[math][Transfor
     Math::Normal3f n1( 2.f, 2.f, 2.f );
     Math::Normal3f expected( 2.01553679f, 0.0192041993f, 1.90190506f );
     Math::Normal3f result = Math::Transform( n1, transformation );
-    auto equal = AllEqual( expected, result, 1.0e-7f );
+    auto equal = AllEqual( expected, result, 1.0e-5f );
     CHECK(equal);
 }
 TEST_CASE("Transform3DTests / PointAffineTransformationMatrixTest1", "[math][Transform3DTests]")

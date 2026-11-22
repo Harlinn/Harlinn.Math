@@ -836,9 +836,9 @@ TEST_CASE("MathVector3FloatTests / FMAddSubTest1", "[math][MathVector3FloatTests
 
         Vector result = Math::FMAddSub( v1, v2, v3 );
         Vector expected(
-            std::fma( v1.x, v2.x, v3.x ),
-            std::fma( v1.y, v2.y, -v3.y ),
-            std::fma( v1.z, v2.z, v3.z ) );
+            std::fma( v1.x, v2.x, -v3.x ),
+            std::fma( v1.y, v2.y, v3.y ),
+            std::fma( v1.z, v2.z, -v3.z ) );
 
         Vector deviation(
             static_cast< float >( Test::Deviation( expected.x, result.x ) ),
@@ -873,9 +873,9 @@ TEST_CASE("MathVector3FloatTests / FMSubAddTest1", "[math][MathVector3FloatTests
 
         Vector result = Math::FMSubAdd( v1, v2, v3 );
         Vector expected(
-            std::fma( v1.x, v2.x, -v3.x ),
-            std::fma( v1.y, v2.y, v3.y ),
-            std::fma( v1.z, v2.z, -v3.z ) );
+            std::fma( v1.x, v2.x, v3.x ),
+            std::fma( v1.y, v2.y, -v3.y ),
+            std::fma( v1.z, v2.z, v3.z ) );
 
         Vector deviation(
             static_cast< float >( Test::Deviation( expected.x, result.x ) ),
