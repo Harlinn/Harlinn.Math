@@ -4405,7 +4405,7 @@ namespace Harlinn::Math
     /// </returns>
     constexpr inline [[nodiscard]] int Log2Int( UInt32 v )
     {
-        unsigned long index = 0;
+        UInt32 index = 0;
         if ( IndexOfBitFromMSB( &index, v ) )
         {
             return std::bit_cast< int >( index );
@@ -4438,7 +4438,7 @@ namespace Harlinn::Math
     /// </returns>
     constexpr inline [[nodiscard]] int Log2Int( UInt64 v )
     {
-        unsigned long index = 0;
+        UInt32 index = 0;
         IndexOfBitFromMSB( &index, v );
         return std::bit_cast< int >( index );
     }
