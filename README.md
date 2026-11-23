@@ -35,3 +35,8 @@ For local development with sibling repositories:
 cmake --preset local-dev
 ```
 
+MSYS2 Clang with libc++ requires a Harlinn.Common checkout that provides the
+`ConstantRange` fallback when `std::ranges::constant_range` is unavailable. Use
+`local-dev` with an updated sibling checkout until that fix is available in the
+fetched dependency.
+

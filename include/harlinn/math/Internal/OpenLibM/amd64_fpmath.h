@@ -52,7 +52,7 @@ union IEEEl2bits {
 		unsigned int	junkh	:32;
 	} bits;
 	struct {
-#ifdef _MSC_VER
+#ifdef _WIN64
 		unsigned long long man : 64;
 		unsigned int	expsign : 16;
 		unsigned long long junk : 48;
