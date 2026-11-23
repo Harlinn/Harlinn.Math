@@ -579,6 +579,10 @@ TEST_CASE("MathTests / OpenLibMFRExpDoubleTest1", "[math][MathTests]")
         {
             int exp = 0;
             auto fraction = std::frexp( x, &exp );
+            if ( !std::isfinite( x ) )
+            {
+                exp = 0;
+            }
             return std::make_pair( fraction, static_cast< double >( exp ) );
         },
         []( auto x )
@@ -603,6 +607,28 @@ TEST_CASE("MathTests / OpenLibMFRExpDoubleTest1", "[math][MathTests]")
         } );
         CHECK(success);
 
+}
+TEST_CASE("OpenLibM frexp handles non-finite and subnormal values", "[math][MathTests]")
+{
+    constexpr auto smallest = std::numeric_limits<double>::denorm_min( );
+    constexpr auto decomposition = FRExp( -smallest );
+    static_assert( decomposition.first == -0.5 && decomposition.second == -1073 );
+
+    for ( const double value : { std::numeric_limits<double>::quiet_NaN( ),
+        std::numeric_limits<double>::infinity( ), -std::numeric_limits<double>::infinity( ) } )
+    {
+        int exponent = 42;
+        const auto fraction = OpenLibM::frexp( value, &exponent );
+        CHECK( exponent == 0 );
+        if ( std::isnan( value ) )
+        {
+            CHECK( std::isnan( fraction ) );
+        }
+        else
+        {
+            CHECK( fraction == value );
+        }
+    }
 }
 TEST_CASE("MathTests / ModFDoubleTest1", "[math][MathTests]")
 {

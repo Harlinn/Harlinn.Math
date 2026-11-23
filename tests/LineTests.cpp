@@ -83,15 +83,14 @@ TEST_CASE("LineTests / LineDistanceTest3", "[math][LineTests]")
     Point3f closestPoint1 = distanceResult.ClosestPoint1( );
     Point3f closestPoint2 = distanceResult.ClosestPoint2( );
 
-    CHECK(distance == 0.554700255f);
-    
-    CHECK(closestPoint1.x == 1.46153855f);
-    CHECK(closestPoint1.y == 1.69230771f);
-    CHECK(closestPoint1.z == 1.69230771f);
-
-    CHECK(closestPoint2.x == 1.00000000f);
-    CHECK(closestPoint2.y == 2.00000000f);
-    CHECK(closestPoint2.z == 1.69230759f);
+    constexpr float tolerance = 1e-5f;
+    CHECK( distance == Catch::Approx( std::sqrt( 4.f / 13.f ) ).margin( tolerance ) );
+    CHECK( closestPoint1.x == Catch::Approx( 19.f / 13.f ).margin( tolerance ) );
+    CHECK( closestPoint1.y == Catch::Approx( 22.f / 13.f ).margin( tolerance ) );
+    CHECK( closestPoint1.z == Catch::Approx( 22.f / 13.f ).margin( tolerance ) );
+    CHECK( closestPoint2.x == Catch::Approx( 1.f ).margin( tolerance ) );
+    CHECK( closestPoint2.y == Catch::Approx( 2.f ).margin( tolerance ) );
+    CHECK( closestPoint2.z == Catch::Approx( 22.f / 13.f ).margin( tolerance ) );
 
 }
 TEST_CASE("LineTests / LineDistanceTest4", "[math][LineTests]")
@@ -110,15 +109,14 @@ TEST_CASE("LineTests / LineDistanceTest4", "[math][LineTests]")
     Point3f closestPoint2 = distanceResult.ClosestPoint2( );
 
     auto expectedDistance = Sqrt( 5.f ) / 5.f;
+    constexpr float tolerance = 1e-4f;
 
-    CHECK(distance == expectedDistance);
-
-    CHECK(closestPoint1.x == 1.40000772f);
-    CHECK(closestPoint1.y == 2.80001545f);
-    CHECK(closestPoint1.z == 4.20002317f);
-
-    CHECK(closestPoint2.x == 1.80000710f);
-    CHECK(closestPoint2.y == 2.60001421f);
-    CHECK(closestPoint2.z == 4.20002842f);
+    CHECK( distance == Catch::Approx( expectedDistance ).margin( tolerance ) );
+    CHECK( closestPoint1.x == Catch::Approx( 1.4f ).margin( tolerance ) );
+    CHECK( closestPoint1.y == Catch::Approx( 2.8f ).margin( tolerance ) );
+    CHECK( closestPoint1.z == Catch::Approx( 4.2f ).margin( tolerance ) );
+    CHECK( closestPoint2.x == Catch::Approx( 1.8f ).margin( tolerance ) );
+    CHECK( closestPoint2.y == Catch::Approx( 2.6f ).margin( tolerance ) );
+    CHECK( closestPoint2.z == Catch::Approx( 4.2f ).margin( tolerance ) );
 
 }

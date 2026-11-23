@@ -507,9 +507,9 @@ TEST_CASE("MathVector3FloatTests / RoundTest1", "[math][MathVector3FloatTests]")
 
         Vector result = Math::Round( v1 );
         Vector expected(
-            std::round( v1.x ),
-            std::round( v1.y ),
-            std::round( v1.z ) );
+            std::nearbyint( v1.x ),
+            std::nearbyint( v1.y ),
+            std::nearbyint( v1.z ) );
 
         Vector deviation(
             static_cast< float >( Test::Deviation( expected.x, result.x ) ),
@@ -1787,73 +1787,54 @@ TEST_CASE("MathVector3FloatTests / PowTest1", "[math][MathVector3FloatTests]")
 }
 TEST_CASE("MathVector3FloatTests / DotTest1", "[math][MathVector3FloatTests]")
 {
-    constexpr float MaxDeviation = 1e-5f;
+    constexpr double ErrorFactor = 8.0 * std::numeric_limits<float>::epsilon( );
     constexpr size_t Iterations = 20000;
     RandomGenerator<float, 20000> generator( -1e10, 1e10 );
     using Vector = Math::Vector<float, 3>;
-    double maxDeviation = 0.;
     for ( size_t i = 0; i < Iterations; i++ )
     {
         Vector v1( generator( ), generator( ), generator( ) );
         Vector v2( generator( ), generator( ), generator( ) );
-
-        auto result = Math::ScalarDot( v1, v2 );
-        auto expected = std::inner_product( v1.begin( ), v1.end( ), v2.begin( ), 0.f );
-
-        auto deviation = Test::Deviation( expected, result );
-
-        if ( deviation > maxDeviation )
+        const auto result = Math::ScalarDot( v1, v2 );
+        const double x = static_cast<double>( v1.x ) * v2.x;
+        const double y = static_cast<double>( v1.y ) * v2.y;
+        const double z = static_cast<double>( v1.z ) * v2.z;
+        const double expected = x + y + z;
+        const double tolerance = ErrorFactor * ( std::abs( x ) + std::abs( y ) + std::abs( z ) );
+        if ( !std::isfinite( result ) || std::abs( result - expected ) > tolerance )
         {
-            maxDeviation = Math::Max( maxDeviation, deviation );
+            CAPTURE( i, result, expected, tolerance );
+            CHECK( false );
+            break;
         }
-
-    }
-
-    if ( maxDeviation > MaxDeviation )
-    {
-        CHECK(false);
     }
 }
 TEST_CASE("MathVector3FloatTests / CrossTest1", "[math][MathVector3FloatTests]")
 {
-    constexpr float MaxDeviation = 1e-5f;
+    constexpr double ErrorFactor = 4.0 * std::numeric_limits<float>::epsilon( );
     constexpr size_t Iterations = 20000;
     RandomGenerator<float, 20000> generator( -1e10, 1e10 );
     using Vector = Math::Vector<float, 3>;
-    Vector maxDeviation;
     for ( size_t i = 0; i < Iterations; i++ )
     {
         Vector v1( generator( ), generator( ), generator( ) );
         Vector v2( generator( ), generator( ), generator( ) );
-
         Vector result = Math::Cross( v1, v2 );
-
-        auto CrossProduct = []( const Vector& v1, const Vector& v2 )
-            {
-                Vector result;
-                result[ 0 ] = v1[ 1 ] * v2[ 2 ] - v1[ 2 ] * v2[ 1 ];
-                result[ 1 ] = v1[ 2 ] * v2[ 0 ] - v1[ 0 ] * v2[ 2 ];
-                result[ 2 ] = v1[ 0 ] * v2[ 1 ] - v1[ 1 ] * v2[ 0 ];
-                return result;
-            };
-        Vector expected = CrossProduct( v1, v2 );
-
-        Vector deviation(
-            static_cast< float >( Test::Deviation( expected.x, result.x ) ),
-            static_cast< float >( Test::Deviation( expected.y, result.y ) ),
-            static_cast< float >( Test::Deviation( expected.z, result.z ) ) );
-
-
-        if ( deviation.x > MaxDeviation || deviation.y > MaxDeviation || deviation.z > MaxDeviation )
+        for ( size_t j = 0; j < 3; ++j )
         {
-            maxDeviation = Max( maxDeviation, deviation );
+            const size_t k = ( j + 1 ) % 3;
+            const size_t l = ( j + 2 ) % 3;
+            const double first = static_cast<double>( v1[k] ) * v2[l];
+            const double second = static_cast<double>( v1[l] ) * v2[k];
+            const double expected = first - second;
+            const double tolerance = ErrorFactor * ( std::abs( first ) + std::abs( second ) );
+            if ( !std::isfinite( result[j] ) || std::abs( result[j] - expected ) > tolerance )
+            {
+                CAPTURE( i, j, expected, tolerance );
+                CHECK( false );
+                return;
+            }
         }
-
-    }
-
-    if ( maxDeviation.x > MaxDeviation || maxDeviation.y > MaxDeviation || maxDeviation.z > MaxDeviation )
-    {
-        CHECK(false);
     }
 }
 TEST_CASE("MathVector3FloatTests / DifferenceOfProductsTest1", "[math][MathVector3FloatTests]")

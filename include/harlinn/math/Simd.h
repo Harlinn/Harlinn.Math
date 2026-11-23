@@ -400,6 +400,43 @@ namespace Harlinn::Math::SIMD
 
     namespace Internal
     {
+        template<typename Traits>
+        inline typename Traits::SIMDType Lerp( typename Traits::SIMDType a, typename Traits::SIMDType b, typename Traits::SIMDType t ) noexcept
+        {
+            using Type = typename Traits::Type;
+            a = Traits::Trim( a );
+            b = Traits::Trim( b );
+            t = Traits::Trim( t );
+            const auto zero = Traits::Zero( );
+            const auto one = Traits::Fill( Type( 1 ) );
+            const auto select = []( auto first, auto second, auto mask )
+            {
+                return Traits::Or( Traits::AndNot( mask, first ), Traits::And( mask, second ) );
+            };
+
+            const auto oppositeSigns = Traits::Or(
+                Traits::And( Traits::LessOrEqual( a, zero ), Traits::GreaterOrEqual( b, zero ) ),
+                Traits::And( Traits::GreaterOrEqual( a, zero ), Traits::LessOrEqual( b, zero ) ) );
+            // Mask inactive branches to avoid overflow in computations that will be discarded.
+            const auto weightedA = Traits::And( oppositeSigns, a );
+            const auto weightedB = Traits::And( oppositeSigns, b );
+            const auto weightedT = Traits::And( oppositeSigns, t );
+            const auto weighted = Traits::Add( Traits::Mul( weightedT, weightedB ), Traits::Mul( Traits::Sub( one, weightedT ), weightedA ) );
+            const auto sameA = Traits::AndNot( oppositeSigns, a );
+            const auto sameB = Traits::AndNot( oppositeSigns, b );
+            const auto sameT = Traits::AndNot( oppositeSigns, t );
+            const auto x = Traits::Add( sameA, Traits::Mul( sameT, Traits::Sub( sameB, sameA ) ) );
+            const auto increasing = Traits::AndNot( Traits::Xor( Traits::Greater( t, one ), Traits::Greater( b, a ) ), Traits::Equal( zero, zero ) );
+            const auto above = select( b, x, Traits::Less( b, x ) );
+            const auto below = select( b, x, Traits::Less( x, b ) );
+            auto result = select( below, above, increasing );
+            result = select( result, weighted, oppositeSigns );
+            result = select( result, a, Traits::Equal( t, zero ) );
+            result = select( result, b, Traits::Equal( t, one ) );
+            result = select( a, result, Traits::Equal( a, a ) );
+            result = select( b, result, Traits::Equal( b, b ) );
+            return select( t, result, Traits::Equal( t, t ) );
+        }
 
         template<UInt32 Arg>
         constexpr UInt32 ShuffleImpl()
@@ -4214,17 +4251,13 @@ namespace Harlinn::Math::SIMD
         /// Stores the contents of a SIMD register to a memory location.
         /// </summary>
         /// <param name="dest">
-        /// Pointer to the destination memory where the SIMD register contents will be stored.
-        /// The memory must be properly aligned for SIMD operations.
+        /// Pointer to destination memory with room for N elements.
         /// </param>
         /// <param name="src">
         /// The SIMD register whose contents will be stored to memory.
         /// </param>
         /// <remarks>
-        /// For short SIMD types (N &lt;= 4), uses _mm_store_ps to store 128-bit data.
-        /// For long SIMD types (N &gt; 4), uses _mm256_store_ps to store 256-bit data.
-        /// The function does not perform bounds or alignment checks; the caller is responsible
-        /// for ensuring the destination pointer is valid and properly aligned.
+        /// Stores exactly N elements. The destination need not be SIMD-aligned.
         /// </remarks>
         static void Store( Type* dest, SIMDType src ) noexcept
         {
@@ -4238,13 +4271,29 @@ namespace Harlinn::Math::SIMD
         /// <param name="src">The SIMD register value to store.</param>
         static void UnalignedStore( Type* dest, SIMDType src ) noexcept
         {
-            if constexpr ( UseShortSIMDType )
+            if constexpr ( N == SIMDTypeCapacity )
             {
-                _mm_storeu_ps( dest, src );
+                if constexpr ( UseShortSIMDType )
+                {
+                    _mm_storeu_ps( dest, src );
+                }
+                else
+                {
+                    _mm256_storeu_ps( dest, src );
+                }
             }
             else
             {
-                _mm256_storeu_ps( dest, src );
+                alignas( AlignAs ) std::array<Type, SIMDTypeCapacity> values;
+                if constexpr ( UseShortSIMDType )
+                {
+                    _mm_storeu_ps( values.data( ), src );
+                }
+                else
+                {
+                    _mm256_storeu_ps( values.data( ), src );
+                }
+                std::memcpy( dest, values.data( ), N * sizeof( Type ) );
             }
         }
 
@@ -4682,7 +4731,9 @@ namespace Harlinn::Math::SIMD
                 }
                 else if constexpr ( N == 3 )
                 {
-                    return _mm_add_ps( _mm_permute_ps( v, _MM_SHUFFLE( 0, 2, 1, 0 ) ), _mm_add_ps( _mm_permute_ps( v, _MM_SHUFFLE( 1, 1, 0, 2 ) ), _mm_permute_ps( v, _MM_SHUFFLE( 2, 0, 2, 1 ) ) ) );
+                    const auto xy = _mm_add_ss( v, _mm_shuffle_ps( v, v, _MM_SHUFFLE( 1, 1, 1, 1 ) ) );
+                    const auto sum = _mm_add_ss( xy, _mm_shuffle_ps( v, v, _MM_SHUFFLE( 2, 2, 2, 2 ) ) );
+                    return _mm_shuffle_ps( sum, sum, _MM_SHUFFLE( 0, 0, 0, 0 ) );
                 }
                 else
                 {
@@ -6479,17 +6530,10 @@ namespace Harlinn::Math::SIMD
         /// <param name="v1">The starting SIMD vector.</param>
         /// <param name="v2">The ending SIMD vector.</param>
         /// <param name="t">The interpolation factor, typically in the range [0, 1].</param>
-        /// <returns>A SIMD vector containing the result of the linear interpolation: v1 * (1 - t) + v2 * t.</returns>
+        /// <returns>A SIMD vector containing the interpolated values.</returns>
         static SIMDType Lerp( SIMDType v1, SIMDType v2, Type t ) noexcept
         {
-            if constexpr ( UseShortSIMDType )
-            {
-                return _mm_fmadd_ps( Fill<Size>( t ), v2, _mm_mul_ps( Fill<Size>( 1.f - t ), v1 ) );
-            }
-            else
-            {
-                return _mm256_fmadd_ps( Fill<Size>( t ), v2, _mm256_mul_ps( Fill<Size>( 1.f - t ), v1 ) );
-            }
+            return Internal::Lerp<Traits>( v1, v2, Fill( t ) );
         }
 
         /// <summary>
@@ -6498,17 +6542,10 @@ namespace Harlinn::Math::SIMD
         /// <param name="v1">The starting SIMD vector value.</param>
         /// <param name="v2">The ending SIMD vector value.</param>
         /// <param name="t">The interpolation factor SIMD vector, typically in the range [0, 1].</param>
-        /// <returns>A SIMD vector containing the interpolated values computed as v1 * (1 - t) + v2 * t.</returns>
+        /// <returns>A SIMD vector containing the interpolated values.</returns>
         static SIMDType Lerp( SIMDType v1, SIMDType v2, SIMDType t ) noexcept
         {
-            if constexpr ( UseShortSIMDType )
-            {
-                return _mm_fmadd_ps( t, v2, _mm_mul_ps( _mm_sub_ps( Fill<Size>( 1.f ), t ), v1 ) );
-            }
-            else
-            {
-                return _mm256_fmadd_ps( t, v2, _mm256_mul_ps( _mm256_sub_ps( Fill<Size>( 1.f ), t ), v1 ) );
-            }
+            return Internal::Lerp<Traits>( v1, v2, t );
         }
         /// <summary>
         /// Performs linear interpolation between two SIMD vectors using fused multiply-add operations.
@@ -9162,7 +9199,7 @@ namespace Harlinn::Math::SIMD
             {
                 if constexpr ( N == 3 )
                 {
-                    return _mm256_insertf128_pd( _mm256_castpd128_pd256( _mm_load_pd( src ) ), _mm_load_pd( src + 2 ), 1 );
+                    return _mm256_insertf128_pd( _mm256_castpd128_pd256( _mm_load_pd( src ) ), _mm_load_sd( src + 2 ), 1 );
                 }
                 else
                 {
@@ -9180,9 +9217,17 @@ namespace Harlinn::Math::SIMD
 
         static SIMDType UnalignedLoad( const Type* src ) noexcept
         {
-            if constexpr ( UseShortSIMDType )
+            if constexpr ( N == 1 )
+            {
+                return _mm_load_sd( src );
+            }
+            else if constexpr ( N == 2 )
             {
                 return _mm_loadu_pd( src );
+            }
+            else if constexpr ( N == 3 )
+            {
+                return _mm256_insertf128_pd( _mm256_castpd128_pd256( _mm_loadu_pd( src ) ), _mm_load_sd( src + 2 ), 1 );
             }
             else
             {
@@ -9197,9 +9242,18 @@ namespace Harlinn::Math::SIMD
         }
         static void UnalignedStore( Type* dest, SIMDType src ) noexcept
         {
-            if constexpr ( UseShortSIMDType )
+            if constexpr ( N == 1 )
+            {
+                _mm_store_sd( dest, src );
+            }
+            else if constexpr ( N == 2 )
             {
                 _mm_storeu_pd( dest, src );
+            }
+            else if constexpr ( N == 3 )
+            {
+                _mm_storeu_pd( dest, _mm256_castpd256_pd128( src ) );
+                _mm_store_sd( dest + 2, _mm256_extractf128_pd( src, 1 ) );
             }
             else
             {
@@ -9935,30 +9989,12 @@ namespace Harlinn::Math::SIMD
 
         static SIMDType Lerp( SIMDType v1, SIMDType v2, Type t ) noexcept
         {
-            if constexpr ( UseShortSIMDType )
-            {
-                return _mm_fmadd_pd( Fill<Size>( t ), v2, _mm_mul_pd( Fill<Size>( 1.f - t ), v1 ) );
-
-                //return _mm_fmadd_pd( v2, v1, _mm_mul_pd( _mm_sub_ps( _mm_set_pd1( 1.f ), v2 ), _mm_set_pd1( t ) ) );
-            }
-            else
-            {
-                return _mm256_fmadd_pd( Fill<Size>( t ), v2, _mm256_mul_pd( Fill<Size>( 1.f - t ), v1 ) );
-
-                //return _mm256_fmadd_pd( v2, v1, _mm256_mul_pd( _mm256_sub_pd( _mm256_set1_pd( 1.f ), v2 ), _mm256_set1_pd( t ) ) );
-            }
+            return Internal::Lerp<Traits>( v1, v2, Fill( t ) );
         }
 
         static SIMDType Lerp( SIMDType v1, SIMDType v2, SIMDType t ) noexcept
         {
-            if constexpr ( UseShortSIMDType )
-            {
-                return _mm_fmadd_pd( t, v2, _mm_mul_pd( _mm_sub_pd( Fill<Size>( 1.f ), t ), v1 ) );
-            }
-            else
-            {
-                return _mm256_fmadd_pd( t, v2, _mm256_mul_pd( _mm256_sub_pd( Fill<Size>( 1.f ), t ), v1 ) );
-            }
+            return Internal::Lerp<Traits>( v1, v2, t );
         }
 
 
