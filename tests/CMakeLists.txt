@@ -4,6 +4,7 @@ add_executable(HarlinnMathTests
     LineTests.cpp
     MathMatrixTests.cpp
     MathTests.cpp
+    MathScalarCoverageTests.cpp
     MathVector2DoubleTests.cpp
     MathVector2FloatTests.cpp
     MathVector3DoubleTests.cpp

@@ -26,6 +26,7 @@
 #include <format>
 #include <bit>
 #include <numbers>
+#include <ranges>
 
 
 namespace Harlinn::Math
@@ -721,35 +722,9 @@ namespace Harlinn::Math
             return fpMagnitude.AsFloatingPoint( );
         }
 
-
-
-        template<FloatingPointType T>
-        [[nodiscard]] constexpr T LerpImpl( T a, T b, T t ) noexcept
-        {
-            constexpr T zero = static_cast< T >( 0.0 );
-            constexpr T one = static_cast< T >( 1.0 );
-            if ( ( a <= zero && b >= zero ) || ( a >= zero && b <= zero ) )
-            {
-                return t * b + ( one - t ) * a;
-            }
-            else if ( t == one )
-            {
-                return b;
-            }
-            T x = a + t * ( b - a );
-            if ( ( t > one ) == ( b > a ) )
-            {
-                return b < x ? x : b;
-            }
-            else
-            {
-                return x < b ? x : b;
-            }
         }
 
-    }
-
-    /// <summary>
+        /// <summary>
     /// <para>
     /// Return the largest floating point number y of the same type 
     /// as x such that y < x. If no such y exists, e.g. if x is -Inf or NaN, then return x.
@@ -1927,21 +1902,13 @@ namespace Harlinn::Math
     }
 
 
-    /// <summary>
-	/// Returns the product of all the given values.
-    /// </summary>
-    /// <typeparam name="T">
-    /// A span-like type.
-    /// </typeparam>
-    /// <param name="values">
-    /// The values to multiply.
-    /// </param>
-    /// <returns>
-    /// Returns the product of all the given values.
-    /// </returns>
-    template<SimpleSpanLike T>
-        requires IsArithmetic<typename T::value_type>
-    [[nodiscard]] constexpr inline typename T::value_type Multiply( const T& values )
+	/// <summary>Multiplies the elements of a range in iteration order.</summary>
+	/// <param name="values">The const-iterable input range. Its element type must be arithmetic.</param>
+	/// <returns>The product, or the multiplicative identity 1 for an empty range.</returns>
+	/// <remarks>Integer overflow follows the rules of the element type; signed overflow is undefined.</remarks>
+	template<typename T>
+		requires std::ranges::input_range<const T> && IsArithmetic<typename T::value_type>
+	[[nodiscard]] constexpr inline typename T::value_type Multiply( const T& values )
     {
         using ValueType = typename T::value_type;
         ValueType result = static_cast< ValueType >( 1 );
@@ -2202,36 +2169,33 @@ namespace Harlinn::Math
         }
     }
 
-    /// <summary>
-    /// <para>
-    /// Computes the linear interpolation between a and b, if the 
-    /// parameter t is inside [​0​, 1), the linear extrapolation otherwise, 
-    /// i.e. the result of a + t * ( b - a ) with accounting 
-    /// for floating point calculation imprecision.
-    /// </para>
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <typeparam name="U"></typeparam>
-    /// <param name="a">An arithmetic type.</param>
-    /// <param name="b">An arithmetic type.</param>
-    /// <param name="t">An arithmetic type.</param>
-    /// <returns>
-    /// The interpolated or extrapolated result. 
-    /// </returns>
+    /// <summary>Interpolates between a and b, or extrapolates when t is outside [0, 1].</summary>
+    /// <param name="a">Value at t = 0.</param>
+    /// <param name="b">Value at t = 1.</param>
+    /// <param name="t">Interpolation parameter.</param>
+    /// <returns>The interpolated value in the floating-point type selected by arithmetic promotion.
+    /// A NaN argument produces NaN.</returns>
+    /// <remarks>Uses <c>std::lerp</c> to avoid unnecessary intermediate overflow and preserve endpoints.</remarks>
     template<ArithmeticType T, ArithmeticType U>
     [[nodiscard]] constexpr inline auto Lerp( T a, T b, U t ) noexcept
     {
-        if consteval
+        using Result = decltype( std::fma( t, b, a ) );
+        const Result first = static_cast<Result>( a );
+        const Result second = static_cast<Result>( b );
+        const Result parameter = static_cast<Result>( t );
+        if ( IsNaN( first ) || IsNaN( second ) || IsNaN( parameter ) )
         {
-            return Internal::LerpImpl( a, b, t );
-            //return ( 1 - t ) * a + t * b;
+            return std::numeric_limits<Result>::quiet_NaN( );
         }
-        else
-        {
-            return std::fma( t, b, std::fma( -t, a, a ) );
-        }
+        return std::lerp( first, second, parameter );
     }
 
+    /// <summary>Evaluates the linear interpolation formula \((1-t)a+tb\).</summary>
+    /// <param name="t">Interpolation parameter; values outside [0, 1] extrapolate.</param>
+    /// <param name="a">Value at t = 0.</param>
+    /// <param name="b">Value at t = 1.</param>
+    /// <returns>The result of evaluating the formula using ordinary arithmetic.</returns>
+    /// <remarks>Unlike a robust interpolation routine, intermediate operations can overflow.</remarks>
     template<ArithmeticType T, ArithmeticType U>
     [[nodiscard]] constexpr inline auto Lerp2( U t, T a, T b ) noexcept
     {
@@ -2920,11 +2884,10 @@ namespace Harlinn::Math
         }
     }
 
-    /// <summary>
-    /// Extracts the value of the unbiased radix-independent exponent 
-    /// from the floating-point argument x, and returns it as a 
-    /// floating-point value.
-    /// </summary>
+    /// <summary>Returns the unbiased exponent of the magnitude of x as a floating-point value.</summary>
+    /// <param name="x">The floating-point input.</param>
+    /// <returns>For finite nonzero x, the exponent in the implementation's radix; zero gives negative infinity,
+    /// infinity gives positive infinity, and NaN gives NaN. Subnormals are treated as normalized.</returns>
     template<FloatingPointType T>
     [[nodiscard]] constexpr inline T LogB( T x ) noexcept
     {
@@ -2938,10 +2901,10 @@ namespace Harlinn::Math
         }
     }
 
-    /// <summary>
-    /// Extracts the value of the unbiased exponent from the floating-point 
-    /// argument x, and returns it as a signed integer value.
-    /// </summary>
+    /// <summary>Returns the unbiased exponent of the magnitude of x as an integer.</summary>
+    /// <param name="x">The floating-point input.</param>
+    /// <returns>The exponent for finite nonzero inputs. Zero, NaN and infinity return
+    /// implementation-defined sentinel values; callers should classify those inputs first.</returns>
     template<FloatingPointType T>
     [[nodiscard]] constexpr inline int ILogB( T x ) noexcept
     {
@@ -3845,14 +3808,15 @@ namespace Harlinn::Math
     }
 
 
-    /// <summary>
-	/// Returns the sine of x divided by x.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="x"></param>
-    /// <returns></returns>
-    template<FloatingPointType T>
-    [[nodiscard]] constexpr inline T SinXOverX( T x )
+	/// <summary>
+	/// Evaluates the unnormalized sinc function
+	/// \(\operatorname{sinc}_u(x) = \sin(x)/x\), with limiting value 1 at zero.
+	/// For sufficiently small x, returns 1 when the correction rounds away.
+	/// </summary>
+	/// <param name="x">The argument in radians.</param>
+	/// <returns>The unnormalized sinc value.</returns>
+	template<FloatingPointType T>
+	[[nodiscard]] constexpr inline T SinXOverX( T x )
     {
         if ( 1 - x * x == 1 )
         {
@@ -3861,14 +3825,14 @@ namespace Harlinn::Math
         return Math::Sin( x ) / x;
     }
 
-    /// <summary>
-	/// Returns the normalized sinc function of x.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="x"></param>
-    /// <returns></returns>
-    template<FloatingPointType T>
-    [[nodiscard]] constexpr inline T Sinc( T x )
+	/// <summary>
+	/// Evaluates the normalized sinc function \(\sin(\pi x)/(\pi x)\),
+	/// with limiting value 1 at zero.
+	/// </summary>
+	/// <param name="x">The dimensionless argument.</param>
+	/// <returns>The normalized sinc value.</returns>
+	template<FloatingPointType T>
+	[[nodiscard]] constexpr inline T Sinc( T x )
     {
         return SinXOverX( Constants<T>::Pi * x );
     }
@@ -3947,25 +3911,12 @@ namespace Harlinn::Math
     }
 
     /// <summary>
-    /// The SmoothStep function creates a smooth, S-shaped curve (sigmoid) 
-    /// for transitions, commonly used in computer graphics to smoothly 
-    /// blend between two values (0 and 1) over a specified range, ensuring 
-    /// the curve starts and ends flat (zero slope) for a natural, gradual 
-    /// acceleration and deceleration.
+    /// Evaluates \(t^2(3-2t)\), where \(t\) is \((x-a)/(b-a)\) clamped to [0, 1].
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="x">
-    /// The input value.
-    /// </param>
-    /// <param name="a">
-    /// The lower bound.
-    /// </param>
-    /// <param name="b">
-    /// The upper bound.
-    /// </param>
-    /// <returns>
-    /// The interpolated value.
-    /// </returns>
+    /// <param name="x">The input value.</param>
+    /// <param name="a">The start of the transition.</param>
+    /// <param name="b">The end of the transition.</param>
+    /// <returns>The interpolated value. If a equals b, returns 0 for x below a and 1 otherwise.</returns>
     template<FloatingPointType T>
     [[nodiscard]] constexpr inline T SmoothStep( T x, T a, T b )
     {
@@ -3988,12 +3939,16 @@ namespace Harlinn::Math
     /// The value to calculate the square root of.
     /// </param>
     /// <returns>
-    /// The square root of the input value, or zero if the input is negative.
+    /// The square root, zero for negative inputs, or NaN for a NaN input.
     /// </returns>
     template<FloatingPointType T>
     [[nodiscard]] constexpr inline T SafeSqrt( T x )
     {
-        return Sqrt( std::max( Constants<T>::Zero, x ) );
+        if ( IsNaN( x ) )
+        {
+            return x;
+        }
+        return Sqrt( x < Constants<T>::Zero ? Constants<T>::Zero : x );
     }
 
     namespace Internal
@@ -4069,7 +4024,7 @@ namespace Harlinn::Math
     template<int n, FloatingPointType T>
     [[nodiscard]] constexpr inline T FastPow( T v )
     {
-        return Internal::FastPowImpl<T>::Pow<n>( v );
+        return Internal::FastPowImpl<T>::template Pow<n>( v );
     }
 
 
@@ -4199,18 +4154,13 @@ namespace Harlinn::Math
         return NextDown( v );
     }
 
-    /// <summary>
-	/// Returns the gamma function value for n, which estimates the maximum relative error.
-    /// </summary>
-    /// <typeparam name="T">
-    /// A floating point type.
-    /// </typeparam>
-    /// <param name="n">
-    /// The integer value to compute the gamma function for.
-    /// </param>
-    /// <returns>
-    /// The gamma function value for n.
-    /// </returns>
+	/// <summary>
+	/// Returns the rounding-error factor \(\gamma_n = n\epsilon/(1-n\epsilon)\),
+	/// where epsilon is <c>Constants&lt;T&gt;::MachineEpsilon</c> (unit roundoff).
+	/// This is not the special gamma function; see <c>TGamma</c>.
+	/// </summary>
+	/// <param name="n">The number of rounding operations; normally nonnegative with n epsilon less than 1.</param>
+	/// <returns>The computed rounding-error factor.</returns>
     template<FloatingPointType T>
     [[nodiscard]] constexpr inline T Gamma( int n )
     {
@@ -4415,13 +4365,18 @@ namespace Harlinn::Math
     /// <returns>
 	/// The adjusted result of the square root.
     /// </returns>
-    template<FloatingPointType T>
-    [[nodiscard]] constexpr inline T SqrtAdjustDown( T a )
-    {
-        return std::max<T>( 0, NextDown( Sqrt( a ) ) );
-    }
+	template<FloatingPointType T>
+	[[nodiscard]] constexpr inline T SqrtAdjustDown( T a )
+	{
+		if ( IsNaN( a ) || a < T( 0 ) )
+		{
+			return std::numeric_limits<T>::quiet_NaN( );
+		}
+		const T adjusted = NextDown( Sqrt( a ) );
+		return adjusted < T( 0 ) ? T( 0 ) : adjusted;
+	}
 
-    /// <summary>
+	/// <summary>
 	/// Returns the result of fused multiply-add, adjusted upwards to account for floating-point precision errors.
     /// </summary>
     /// <typeparam name="T">
@@ -4612,19 +4567,26 @@ namespace Harlinn::Math
 
     // https://stackoverflow.com/a/10792321
     
-    /// <summary>
-	/// Returns an efficient approximation of the exponential function e^x.
-    /// </summary>
-    /// <param name="x">
-    /// The exponent to raise e to.
-    /// </param>
-    /// <returns>
-    /// An efficient approximation of the exponential function e^x.
-    /// </returns>
-    [[nodiscard]] constexpr inline float FastExp( float x )
-    {
-        // Compute $x'$ such that $\roman{e}^x = 2^{x'}$
-        float xp = x * 1.442695041f;
+	/// <summary>Approximates \(e^x\) using a polynomial and binary exponent scaling.</summary>
+	/// <param name="x">The exponent.</param>
+	/// <returns>An approximate result. Results below the normal range are flushed to zero;
+	/// large positive inputs return infinity and NaNs propagate.</returns>
+	[[nodiscard]] constexpr inline float FastExp( float x )
+	{
+		if ( IsNaN( x ) )
+		{
+			return x;
+		}
+		if ( x >= 89.f )
+		{
+			return Constants<float>::Infinity;
+		}
+		if ( x <= -90.f )
+		{
+			return 0.f;
+		}
+		// Compute $x'$ such that $\roman{e}^x = 2^{x'}$
+		float xp = x * 1.442695041f;
 
         // Find integer and fractional components of $x'$
         float fxp = Floor( xp ), f = xp - fxp;
@@ -4645,7 +4607,7 @@ namespace Harlinn::Math
         }
         auto bits = std::bit_cast< UInt32 >( twoToF );
         bits &= 0b10000000011111111111111111111111u;
-        bits |= ( exponent + 127 ) << 23;
+        bits |= static_cast< UInt32 >( exponent + 127 ) << 23;
         return std::bit_cast< float >( bits );
     }
 
@@ -4780,28 +4742,21 @@ namespace Harlinn::Math
         return Logistic( x, s ) / ( LogisticCDF( b, s ) - LogisticCDF( a, s ) );
     }
 
+    /// <summary>Declares the inverse error function. No definition is provided by this header.</summary>
     template<FloatingPointType FloatT>
     constexpr inline FloatT ErfInv( FloatT a );
+    /// <summary>Declares the modified Bessel function of order zero. No definition is provided by this header.</summary>
     template<FloatingPointType FloatT>
     constexpr inline FloatT I0( FloatT x );
+    /// <summary>Declares the natural logarithm of the modified Bessel function of order zero. No definition is provided by this header.</summary>
     template<FloatingPointType FloatT>
     constexpr inline FloatT LogI0( FloatT x );
 
-    /// <summary>
-	/// Returns the largest index i in the range [0, sz-2] such that pred(i) is true.
-    /// </summary>
-    /// <typeparam name="Predicate">
-    /// A callable type that takes an index and returns a boolean.
-    /// </typeparam>
-    /// <param name="sz">
-    /// The size of the range to search.
-    /// </param>
-    /// <param name="pred">
-    /// A callable type that takes an index and returns a boolean.
-    /// </param>
-    /// <returns>
-    /// The largest index i in the range [0, sz-2] such that pred(i) is true.
-    /// </returns>
+	/// <summary>Binary-searches a monotone predicate to locate an interval.</summary>
+	/// <param name="sz">Number of endpoints; must be at least 2 and fit in the signed size type.</param>
+	/// <param name="pred">Predicate that is true for an initial run of indices and false thereafter.</param>
+	/// <returns>The final true index clamped to [0, sz-2]. Returns 0 if all tested indices are false,
+	/// and sz-2 if they are all true.</returns>
     template<typename Predicate>
         requires std::is_invocable_r_v<bool, Predicate, size_t>
     [[nodiscard]] constexpr inline size_t FindInterval( size_t sz, const Predicate& pred )
@@ -5190,34 +5145,21 @@ namespace Harlinn::Math
         return static_cast< FloatT >( ip );
     }
 
-    /// <summary>
-	/// Calculates the roots of the quadratic equation ax^2 + bx + c = 0.
-    /// </summary>
-    /// <typeparam name="FloatT">
-    /// A floating-point type.
-    /// </typeparam>
-    /// <typeparam name="...T">
-    /// A sequence of terms.
-    /// </typeparam>
-    /// <param name="a">
-    /// The coefficient of x^2.
-    /// </param>
-    /// <param name="b">
-    /// The coefficient of x.
-    /// </param>
-    /// <param name="c">
-    /// The constant term.
-    /// </param>
-    /// <param name="t0">
-    /// The first root.
-    /// </param>
-    /// <param name="t1">
-    /// The second root.
-    /// </param>
-    /// <returns>
-    /// True if the roots were found, false otherwise.
-    /// </returns>
-    template <FloatingPointType FloatT, typename... T>
+	/// <summary>
+	/// Finds the real roots of \(a x^2 + b x + c = 0\), using a cancellation-resistant formula.
+	/// </summary>
+	/// <param name="a">The quadratic coefficient.</param>
+	/// <param name="b">The linear coefficient.</param>
+	/// <param name="c">The constant coefficient.</param>
+	/// <param name="t0">Non-null output pointer for the smaller root.</param>
+	/// <param name="t1">Non-null output pointer for the larger root.</param>
+	/// <returns>
+	/// True if real roots were found; false for a negative discriminant or a zero quadratic
+	/// and linear coefficient. For a linear equation both outputs receive the same root.
+	/// Outputs are unchanged on failure.
+	/// </returns>
+	/// <remarks>Coefficients should be finite and scaled so intermediate products do not overflow.</remarks>
+	template <FloatingPointType FloatT, typename... T>
     [[nodiscard]] constexpr inline bool Quadratic( FloatT a, FloatT b, FloatT c, FloatT* t0, FloatT* t1 )
     {
         // Handle case of $a=0$ for quadratic solution
@@ -5242,7 +5184,7 @@ namespace Harlinn::Math
         // Compute quadratic _t_ values
         FloatT q = static_cast< FloatT >( -0.5 ) * ( b + CopySign( rootDiscrim, b ) );
         *t0 = q / a;
-        *t1 = c / q;
+        *t1 = q == static_cast< FloatT >( 0 ) ? *t0 : c / q;
         if ( *t0 > *t1 )
         {
             std::swap( *t0, *t1 );
@@ -5275,9 +5217,12 @@ namespace Harlinn::Math
     /// <param name="fEps">
     /// The tolerance for the function values.
     /// </param>
-    /// <returns>
-    /// The root of the function, or NaN if not found.
-    /// </returns>
+    /// <returns>A point satisfying the function-value or interval-width tolerance.</returns>
+    /// <remarks>
+    /// Requires an ordered, finite bracket with a sign change, positive tolerances, and a callable
+    /// returning the function value and derivative. There is no iteration limit or invalid-bracket
+    /// check; violating these preconditions may prevent convergence.
+    /// </remarks>
     template <typename Func, FloatingPointType FloatT>
         requires std::is_invocable_r_v<std::pair<FloatT, FloatT>, Func, FloatT>
     [[nodiscard]] constexpr inline FloatT NewtonBisection( FloatT x0, FloatT x1, Func f, FloatT xEps = static_cast< FloatT >( 1e-6 ), FloatT fEps = static_cast< FloatT >( 1e-6 ) )
@@ -5336,10 +5281,10 @@ namespace Harlinn::Math
 	/// Represents a closed interval [lowerBound, upperBound] of floating-point values.
     /// </summary>
 	/// <remarks>
-    /// Interval arithmetic represents each computed value as a conservative enclosure 
-    /// [lower, upper] so the true mathematical result is guaranteed to lie inside the 
-    /// interval. Use `Interval<T>` to make rounding and cancellation explicit and to 
-    /// make numerical decisions robust.
+    /// Interval operations expand rounded endpoint results to help enclose the corresponding
+    /// real values. They assume valid ordered inputs and ordinary IEEE arithmetic; NaNs,
+    /// infinities, overflow and approximation error may need separate handling. Check the
+    /// contract of each operation before relying on an enclosure for numerical decisions.
     /// 
     /// Mathematical summary:
     /// - For a scalar computation replace a single floating result `x` by an interval \([x_{\min}, x_{\max}]\).
@@ -5348,7 +5293,8 @@ namespace Harlinn::Math
     /// 
     /// Usage notes:
     /// - Convert compensated results to intervals: call `Interval<T>::FromValueAndError(p.v, p.err)` to obtain a tight enclosure.
-    /// - Propagate bounds with interval operators `+`, `-`, `*`, `/`: these functions use directed rounding (`NextDown` / `NextUp`) so enclosures remain conservative.
+    /// - Operators `+`, `-`, `*`, `/` expand rounded results using `NextDown` and `NextUp`;
+    ///   they do not change the hardware rounding mode.
     /// - Detect cancellation or sign-uncertainty by inspecting interval endpoints, for example test the discriminant with `if (discrim.LowerBound() &gt;= 0)` to decide on real roots.
     /// - Intervals are conservative and may widen; combine them with compensated helpers (`TwoProd`, `TwoSum`, `FMA`) to keep bounds tight.
     /// 
@@ -5428,20 +5374,16 @@ namespace Harlinn::Math
         /// <param name="v">
         /// The value to initialize the interval.
         /// </param>
-        /// <param name="err">
-        /// The error.
-        /// </param>
-        /// <returns></returns>
+        /// <param name="err">The signed error; its magnitude sets the radius.</param>
+        /// <returns>An outward-expanded interval containing v plus or minus the error magnitude.</returns>
         [[nodiscard]] constexpr static Interval FromValueAndError( value_type v, value_type err )
         {
-            if ( err == static_cast< value_type >( 0 ) )
+            const value_type radius = Abs( err );
+            if ( radius == static_cast< value_type >( 0 ) )
             {
                 return Interval( v );
             }
-            else
-            {
-                return Interval( SubAdjustDown( v, err ), AddAdjustUp( v, err ) );
-            }
+            return Interval( SubAdjustDown( v, radius ), AddAdjustUp( v, radius ) );
         }
 
         /// <summary>
@@ -5756,7 +5698,11 @@ namespace Harlinn::Math
         /// </returns>
         constexpr Interval& operator/=( value_type f )
         {
-            if ( f > static_cast< value_type >( 0 ) )
+            if ( f == static_cast< value_type >( 0 ) )
+            {
+                *this = Interval( -std::numeric_limits<value_type>::infinity( ), std::numeric_limits<value_type>::infinity( ) );
+            }
+            else if ( f > static_cast< value_type >( 0 ) )
             {
                 *this = Interval( DivAdjustDown( lowerBound_, f ), DivAdjustUp( upperBound_, f ) );
             }
@@ -6382,30 +6328,15 @@ namespace Harlinn::Math
         return MulPow2( i, s );
     }
 
-    /// <summary>
-	/// Calculates the multiplication of an interval by a power-of-two scalar.
-    /// </summary>
-    /// <typeparam name="FloatT">
-	/// A floating-point type.
-    /// </typeparam>
-    /// <param name="i">
-	/// The interval.
-    /// </param>
-    /// <param name="s">
-	/// The power-of-two scalar.
-    /// </param>
-    /// <returns>
-	/// The resulting interval.
-    /// </returns>
-    template<FloatingPointType FloatT>
-    [[nodiscard]] inline Interval<FloatT> MulPow2( const Interval<FloatT>& i, FloatT s )
-    {
-        FloatT as = std::abs( s );
-
-        // Multiplication by powers of 2 is exaact
-        return Interval<FloatT>( std::min( i.LowerBound( ) * s, i.UpperBound( ) * s ),
-            std::max( i.LowerBound( ) * s, i.UpperBound( ) * s ) );
-    }
+	/// <summary>Multiplies an interval by a scalar, with outward rounding.</summary>
+	/// <param name="i">The interval.</param>
+	/// <param name="s">The scale, conventionally a power of two.</param>
+	/// <returns>An enclosure of the scaled interval, including underflowed results.</returns>
+	template<FloatingPointType FloatT>
+	[[nodiscard]] inline Interval<FloatT> MulPow2( const Interval<FloatT>& i, FloatT s )
+	{
+		return i * s;
+	}
 
     /// <summary>
 	/// Calculates the absolute value of an interval.
@@ -6478,71 +6409,77 @@ namespace Harlinn::Math
         return Interval<FloatT>( std::max<FloatT>( static_cast< FloatT >( 0 ), NextDown( low ) ), NextUp( high ) );
     }
 
-    /// <summary>
-	/// Calculates the sine of an interval.
-    /// </summary>
-    /// <typeparam name="FloatT">
-	/// A floating-point type.
-    /// </typeparam>
-    /// <param name="i">
-	/// The interval.
-    /// </param>
-    /// <returns>
-	/// The sine of the interval.
-    /// </returns>
-    template<FloatingPointType FloatT>
-    [[nodiscard]] inline Interval<FloatT> Sin( const Interval<FloatT>& i )
-    {
-        FloatT low = Math::Sin( std::max<FloatT>( static_cast< FloatT >( 0 ), i.LowerBound( ) ) );
-        FloatT high = Math::Sin( i.UpperBound( ) );
+	/// <summary>Encloses the sine of every real value in an interval, in radians.</summary>
+	/// <param name="i">The input interval.</param>
+	/// <returns>An outward-expanded enclosure in [-1, 1]. For intervals extending beyond
+	/// two periods around zero, returns the conservative enclosure [-1, 1].</returns>
+	template<FloatingPointType FloatT>
+	[[nodiscard]] inline Interval<FloatT> Sin( const Interval<FloatT>& i )
+	{
+		const FloatT pi = Constants<FloatT>::Pi;
+		if ( IsNaN( i.LowerBound( ) ) || IsNaN( i.UpperBound( ) ) )
+		{
+			return Interval<FloatT>( std::numeric_limits<FloatT>::quiet_NaN( ) );
+		}
+		if ( !IsFinite( i.LowerBound( ), i.UpperBound( ) ) ||
+			i.LowerBound( ) < -FloatT( 2 ) * pi || i.UpperBound( ) > FloatT( 2 ) * pi )
+		{
+			return Interval<FloatT>( FloatT( -1 ), FloatT( 1 ) );
+		}
+		const FloatT first = Math::Sin( i.LowerBound( ) );
+		const FloatT last = Math::Sin( i.UpperBound( ) );
+		FloatT low = std::max( FloatT( -1 ), NextDown( NextDown( std::min( first, last ) ) ) );
+		FloatT high = std::min( FloatT( 1 ), NextUp( NextUp( std::max( first, last ) ) ) );
+		const auto intersects = [&]( FloatT critical )
+		{
+			return i.LowerBound( ) <= NextUp( critical ) && i.UpperBound( ) >= NextDown( critical );
+		};
+		if ( intersects( -FloatT( 1.5 ) * pi ) || intersects( FloatT( 0.5 ) * pi ) )
+		{
+			high = FloatT( 1 );
+		}
+		if ( intersects( -FloatT( 0.5 ) * pi ) || intersects( FloatT( 1.5 ) * pi ) )
+		{
+			low = FloatT( -1 );
+		}
+		return Interval<FloatT>( low, high );
+	}
 
-        if ( low > high )
-        {
-            std::swap( low, high );
-        }
-        low = std::max<FloatT>( static_cast< FloatT >( -1 ), NextDown( low ) );
-        high = std::min<FloatT>( static_cast< FloatT >( 1 ), NextUp( high ) );
-        if ( InRange( Constants<FloatT>::PiOver2, i ) )
-        {
-            high = static_cast< FloatT >( 1 );
-        }
-        if ( InRange( ( static_cast< FloatT >( 3. ) / static_cast< FloatT >( 2. ) ) * Constants<FloatT>::Pi, i ) )
-        {
-            low = static_cast< FloatT >( -1 );
-        }
-        return Interval( low, high );
-    }
-
-    /// <summary>
-	/// Calculates the cosine of an interval.
-    /// </summary>
-    /// <typeparam name="FloatT">
-	/// A floating-point type.
-    /// </typeparam>
-    /// <param name="i">
-	/// The interval.
-    /// </param>
-    /// <returns>
-	/// The cosine of the interval.
-    /// </returns>
-    template<FloatingPointType FloatT>
-    [[nodiscard]] inline Interval<FloatT> Cos( const Interval<FloatT>& i )
-    {
-        FloatT low = Math::Cos( std::max<FloatT>( static_cast< FloatT >( 0 ), i.LowerBound( ) ) );
-        FloatT high = Math::Cos( i.UpperBound( ) );
-        if ( low > high )
-        {
-            std::swap( low, high );
-        }
-        low = std::max<FloatT>( static_cast< FloatT >( -1 ), NextDown( low ) );
-        high = std::min<FloatT>( static_cast< FloatT >( 1 ), NextUp( high ) );
-        if ( InRange( Constants<FloatT>::Pi, i ) )
-        {
-            low = static_cast< FloatT >( -1 );
-        }
-
-        return Interval( low, high );
-    }
+	/// <summary>Encloses the cosine of every real value in an interval, in radians.</summary>
+	/// <param name="i">The input interval.</param>
+	/// <returns>An outward-expanded enclosure in [-1, 1]. For intervals extending beyond
+	/// two periods around zero, returns the conservative enclosure [-1, 1].</returns>
+	template<FloatingPointType FloatT>
+	[[nodiscard]] inline Interval<FloatT> Cos( const Interval<FloatT>& i )
+	{
+		const FloatT pi = Constants<FloatT>::Pi;
+		if ( IsNaN( i.LowerBound( ) ) || IsNaN( i.UpperBound( ) ) )
+		{
+			return Interval<FloatT>( std::numeric_limits<FloatT>::quiet_NaN( ) );
+		}
+		if ( !IsFinite( i.LowerBound( ), i.UpperBound( ) ) ||
+			i.LowerBound( ) < -FloatT( 2 ) * pi || i.UpperBound( ) > FloatT( 2 ) * pi )
+		{
+			return Interval<FloatT>( FloatT( -1 ), FloatT( 1 ) );
+		}
+		const FloatT first = Math::Cos( i.LowerBound( ) );
+		const FloatT last = Math::Cos( i.UpperBound( ) );
+		FloatT low = std::max( FloatT( -1 ), NextDown( NextDown( std::min( first, last ) ) ) );
+		FloatT high = std::min( FloatT( 1 ), NextUp( NextUp( std::max( first, last ) ) ) );
+		const auto intersects = [&]( FloatT critical )
+		{
+			return i.LowerBound( ) <= NextUp( critical ) && i.UpperBound( ) >= NextDown( critical );
+		};
+		if ( intersects( -pi ) || intersects( pi ) )
+		{
+			low = FloatT( -1 );
+		}
+		if ( intersects( -FloatT( 2 ) * pi ) || intersects( FloatT( 0 ) ) || intersects( FloatT( 2 ) * pi ) )
+		{
+			high = FloatT( 1 );
+		}
+		return Interval<FloatT>( low, high );
+	}
 
     /// <summary>
 	/// Calculates the sine and cosine of an interval.
@@ -6553,50 +6490,16 @@ namespace Harlinn::Math
     /// <param name="i">
     /// The interval.
     /// </param>
-    /// <param name="sine">
-    /// The sine of the interval.
-    /// </param>
-    /// <param name="cosine">
-    /// The cosine of the interval.
-    /// </param>
+    /// <param name="sine">Non-null output pointer for the sine enclosure.</param>
+    /// <param name="cosine">Non-null output pointer for the cosine enclosure; must differ from sine.</param>
+    /// <remarks>An output may alias the input. The enclosures are the same as those returned by Sin and Cos.</remarks>
     template<FloatingPointType FloatT>
     inline void SinCos( const Interval<FloatT>& i, Interval<FloatT>* sine, Interval<FloatT>* cosine )
     {
-        FloatT sinLow;
-        FloatT cosLow;
-        Math::SinCos( std::max<FloatT>( static_cast< FloatT >( 0 ), i.LowerBound( ) ), &sinLow, &cosLow );
-
-        FloatT sinHigh;
-        FloatT cosHigh;
-        Math::SinCos( i.UpperBound( ), &sinHigh, &cosHigh );
-
-        if ( sinLow > sinHigh )
-        {
-            std::swap( sinLow, sinHigh );
-        }
-        if ( cosLow > cosHigh )
-        {
-            std::swap( cosLow, cosHigh );
-        }
-        sinLow = std::max<FloatT>( static_cast< FloatT >( -1 ), NextDown( sinLow ) );
-        sinHigh = std::min<FloatT>( static_cast< FloatT >( 1 ), NextUp( sinHigh ) );
-        cosLow = std::max<FloatT>( static_cast< FloatT >( -1 ), NextDown( cosLow ) );
-        cosHigh = std::min<FloatT>( static_cast< FloatT >( 1 ), NextUp( cosHigh ) );
-
-        if ( InRange( Constants<FloatT>::PiOver2, i ) )
-        {
-            sinHigh = static_cast< FloatT >( 1 );
-        }
-        if ( InRange( ( static_cast< FloatT >( 3. ) / static_cast< FloatT >( 2. ) ) * Constants<FloatT>::Pi, i ) )
-        {
-            sinLow = static_cast< FloatT >( -1 );
-        }
-        if ( InRange( Constants<FloatT>::Pi, i ) )
-        {
-            cosLow = static_cast< FloatT >( -1 );
-        }
-        *sine = Interval( sinLow, sinHigh );
-        *cosine = Interval( cosLow, cosHigh );
+        const auto sineResult = Sin( i );
+        const auto cosineResult = Cos( i );
+        *sine = sineResult;
+        *cosine = cosineResult;
     }
 
 
@@ -6672,30 +6575,16 @@ namespace Harlinn::Math
         return Sqr( i );
     }
 
-    /// <summary>
-	/// Calculates the sum of squares of multiple intervals.
-    /// </summary>
-    /// <typeparam name="FloatT">
-	/// A floating-point type.
-    /// </typeparam>
-    /// <typeparam name="...Args">
-    /// A variadic list of floating-point types.
-    /// </typeparam>
-    /// <param name="i">
-    /// The first interval.
-    /// </param>
-    /// <param name="...args">
-    /// The additional intervals.
-    /// </param>
-    /// <returns>
-    /// The sum of squares of the intervals.
-    /// </returns>
-    template <FloatingPointType FloatT, FloatingPointType... Args>
-    [[nodiscard]] inline Interval<FloatT> SumSquares( const Interval<FloatT>& i, Args... args )
-    {
-        Interval ss = FMA( i, i, SumSquares( args... ) );
-        return Interval( std::max<FloatT>( 0, ss.LowerBound( ) ), ss.UpperBound( ) );
-    }
+	/// <summary>Encloses the sum of squares of two or more intervals.</summary>
+	/// <param name="i">The first interval.</param>
+	/// <param name="args">Additional intervals with the same element type.</param>
+	/// <returns>An interval containing every sum of squared values.</returns>
+	template <FloatingPointType FloatT, typename... Args>
+		requires ( sizeof...( Args ) > 0 ) && ( std::same_as<Interval<FloatT>, std::remove_cvref_t<Args>> && ... )
+	[[nodiscard]] inline Interval<FloatT> SumSquares( const Interval<FloatT>& i, const Args&... args )
+	{
+		return Sqr( i ) + SumSquares( args... );
+	}
 
     namespace Internal
     {
@@ -6737,42 +6626,70 @@ namespace Harlinn::Math
 
         [[nodiscard]] constexpr UInt16 FloatToHalf( float value )
         {
-            constexpr UInt32 FloatInfinity = 255UL << 23UL;
-            constexpr UInt32 HalfInfinity = 31UL << 23UL;
-            constexpr UInt32 Magic = 15UL << 23UL;
-            constexpr UInt32 SignMask = 0x80000000UL;
-            constexpr UInt32 RoundMask = ~0xfffUL;
-
-            UInt32 v = std::bit_cast< UInt32 >( value );
-
-            const UInt32 sign = v & SignMask;
-            v ^= sign;
-            UInt32 h = 0;
-            if ( v >= FloatInfinity )
+            const UInt32 bits = std::bit_cast<UInt32>( value );
+            const UInt32 sign = ( bits >> 16 ) & 0x8000u;
+            const UInt32 exponent = ( bits >> 23 ) & 0xffu;
+            const UInt32 fraction = bits & 0x7fffffu;
+            if ( exponent == 0xffu )
             {
-                h = ( v > FloatInfinity ) ? 0x7e00 : 0x7c00;
+                return static_cast<UInt16>( sign | ( fraction ? 0x7e00u : 0x7c00u ) );
             }
-            else
+            const int power = static_cast<int>( exponent ) - 127;
+            if ( power > 15 )
             {
-                v &= RoundMask;
-                auto f = std::bit_cast< float >( v );
-                f *= std::bit_cast< float >( Magic );
-                v = std::bit_cast< UInt32 >( f );
-                v -= RoundMask;
-
-                if ( v > HalfInfinity )
-                {
-                    v = HalfInfinity;
-                }
-                h = v >> 13;
+                return static_cast<UInt16>( sign | 0x7c00u );
             }
+            if ( power < -25 )
+            {
+                return static_cast<UInt16>( sign );
+            }
+            const UInt32 significand = fraction | 0x800000u;
+            const unsigned shift = power >= -14 ? 13u : static_cast<unsigned>( -power - 1 );
+            UInt32 rounded = significand >> shift;
+            const UInt32 remainder = significand & ( ( UInt32( 1 ) << shift ) - 1 );
+            const UInt32 halfway = UInt32( 1 ) << ( shift - 1 );
+            if ( remainder > halfway || ( remainder == halfway && ( rounded & 1u ) ) )
+            {
+                ++rounded;
+            }
+			const UInt32 half = power >= -14 ? ( static_cast<UInt32>( power + 14 ) << 10 ) + rounded : rounded;
+			return static_cast<UInt16>( sign | half );
+		}
 
-            h |= sign >> 16;
-            return h;
-        }
-    }
+		[[nodiscard]] constexpr UInt16 FloatToHalf( double value )
+		{
+			const UInt64 bits = std::bit_cast<UInt64>( value );
+			const UInt64 sign = ( bits >> 48 ) & 0x8000u;
+			const UInt64 exponent = ( bits >> 52 ) & 0x7ffu;
+			const UInt64 fraction = bits & 0xfffffffffffffull;
+			if ( exponent == 0x7ffu )
+			{
+				return static_cast<UInt16>( sign | ( fraction ? 0x7e00u : 0x7c00u ) );
+			}
+			const int power = static_cast<int>( exponent ) - 1023;
+			if ( power > 15 )
+			{
+				return static_cast<UInt16>( sign | 0x7c00u );
+			}
+			if ( power < -25 )
+			{
+				return static_cast<UInt16>( sign );
+			}
+			const UInt64 significand = fraction | ( UInt64( 1 ) << 52 );
+			const unsigned shift = power >= -14 ? 42u : static_cast<unsigned>( 28 - power );
+			UInt64 rounded = significand >> shift;
+			const UInt64 remainder = significand & ( ( UInt64( 1 ) << shift ) - 1 );
+			const UInt64 halfway = UInt64( 1 ) << ( shift - 1 );
+			if ( remainder > halfway || ( remainder == halfway && ( rounded & 1u ) ) )
+			{
+				++rounded;
+			}
+			const UInt64 half = power >= -14 ? ( static_cast<UInt64>( power + 14 ) << 10 ) + rounded : rounded;
+			return static_cast<UInt16>( sign | half );
+		}
+	}
 
-    /// <summary>
+	/// <summary>
 	/// Represents a 16-bit half-precision floating-point number.
     /// </summary>
     class Half
@@ -6798,12 +6715,14 @@ namespace Harlinn::Math
         }
     public:
 
+        /// <summary>Converts a binary32 value to binary16 using round-to-nearest, ties-to-even.</summary>
         explicit constexpr Half( float value ) noexcept
             : value_( Internal::FloatToHalf( value ) )
         {
         }
+        /// <summary>Converts a binary64 value directly to binary16 using round-to-nearest, ties-to-even.</summary>
         explicit constexpr Half( double value ) noexcept
-            : Half( static_cast< float >( value ) )
+            : value_( Internal::FloatToHalf( value ) )
         {
         }
 
@@ -6826,8 +6745,13 @@ namespace Harlinn::Math
             return static_cast< double >( Internal::HalfToFloat( value_ ) );
         }
 
+        /// <summary>Compares numerical values: signed zeros compare equal and NaNs compare unequal.</summary>
         [[nodiscard]] constexpr bool operator==( const Half& other ) const noexcept
         {
+            if ( IsNaN( ) || other.IsNaN( ) )
+            {
+                return false;
+            }
             if ( value_ == other.value_ )
             {
                 return true;
@@ -6861,9 +6785,10 @@ namespace Harlinn::Math
         }
 
 
+        /// <summary>Returns the next greater half value, preserving NaN and positive infinity.</summary>
         [[nodiscard]] constexpr Half NextUp( ) const noexcept
         {
-            if ( IsInf( ) && Sign( ) == 1 )
+            if ( IsNaN( ) || ( IsInf( ) && Sign( ) == 1 ) )
             {
                 return *this;
             }
@@ -6885,9 +6810,10 @@ namespace Harlinn::Math
             return up;
         }
 
+        /// <summary>Returns the next smaller half value, preserving NaN and negative infinity.</summary>
         [[nodiscard]] constexpr Half NextDown( ) const noexcept
         {
-            if ( IsInf( ) && Sign( ) == -1 )
+            if ( IsNaN( ) || ( IsInf( ) && Sign( ) == -1 ) )
             {
                 return *this;
             }
