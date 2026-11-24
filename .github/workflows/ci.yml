@@ -19,6 +19,32 @@ jobs:
         if: runner.os != 'Windows' || matrix.compiler == 'msvc'
         uses: seanmiddleditch/gha-setup-ninja@master
 
+      - name: Install latest Ubuntu compiler
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          COMPILER: ${{ matrix.compiler }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          package=$(apt-cache search --names-only "^${COMPILER}-[0-9]+$" | awk '{print $1}' | sort -V | tail -n 1)
+          if [[ -z "$package" ]]; then
+            echo "No versioned ${COMPILER} package is available" >&2
+            exit 1
+          fi
+          version=${package##*-}
+          if [[ "$COMPILER" == gcc ]]; then
+            sudo apt-get install -y "$package" "g++-$version"
+            echo "CC=/usr/bin/gcc-$version" >> "$GITHUB_ENV"
+            echo "CXX=/usr/bin/g++-$version" >> "$GITHUB_ENV"
+            "/usr/bin/g++-$version" --version
+          else
+            sudo apt-get install -y "$package"
+            echo "CC=/usr/bin/clang-$version" >> "$GITHUB_ENV"
+            echo "CXX=/usr/bin/clang++-$version" >> "$GITHUB_ENV"
+            "/usr/bin/clang++-$version" --version
+          fi
+
       - name: Setup MSVC
         if: runner.os == 'Windows' && matrix.compiler == 'msvc'
         uses: ilammy/msvc-dev-cmd@v1
