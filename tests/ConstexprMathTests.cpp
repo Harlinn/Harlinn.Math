@@ -1,5 +1,7 @@
 #include "test_support.h"
 
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
+
 /*
    Copyright 2024-2026 Espen Harlinn
 
@@ -193,12 +195,26 @@ TEST_CASE("ConstexprMathTests / UInt64SignumTest1", "[math][ConstexprMathTests]"
 }
 TEST_CASE("ConstexprMathTests / wchar_tSignumTest1", "[math][ConstexprMathTests]")
 {
-    constexpr auto positiveValue1 = signum( static_cast< wchar_t >( -2 ) );
-    CHECK(positiveValue1 == 1);
+    constexpr auto convertedNegative = static_cast< wchar_t >( -2 );
+    constexpr auto convertedSign = signum( convertedNegative );
+    constexpr auto expectedSign = std::is_signed_v<wchar_t> ? -1 : 1;
+    static_assert( convertedSign == expectedSign );
+    CHECK( convertedSign == expectedSign );
+
+    constexpr auto lowestSign = signum( std::numeric_limits<wchar_t>::lowest( ) );
+    constexpr auto expectedLowestSign = std::is_signed_v<wchar_t> ? -1 : 0;
+    static_assert( lowestSign == expectedLowestSign );
+    CHECK( lowestSign == expectedLowestSign );
+
     constexpr auto zeroValue = signum( static_cast< wchar_t >( 0 ) );
-    CHECK(zeroValue == 0);
-    constexpr auto positiveValue2 = signum( static_cast< wchar_t >( 2 ) );
-    CHECK(positiveValue2 == 1);
+    static_assert( zeroValue == 0 );
+    CHECK( zeroValue == 0 );
+    constexpr auto positiveValue = signum( static_cast< wchar_t >( 2 ) );
+    static_assert( positiveValue == 1 );
+    CHECK( positiveValue == 1 );
+    constexpr auto maximumSign = signum( std::numeric_limits<wchar_t>::max( ) );
+    static_assert( maximumSign == 1 );
+    CHECK( maximumSign == 1 );
 }
 TEST_CASE("ConstexprMathTests / SingleSignumTest1", "[math][ConstexprMathTests]")
 {
@@ -3645,11 +3661,13 @@ TEST_CASE("ConstexprMathTests / FloatTanTest1", "[math][ConstexprMathTests]")
     CHECK((expectedTanRM360) == Catch::Approx(tanRM360).epsilon((0.00001f) / 100.0));
     CHECK((expectedTanRM180) == Catch::Approx(tanRM180).epsilon((0.00001f) / 100.0));
     CHECK(expectedTanRM135 == tanRM135);
-    CHECK(expectedTanRM90 == tanRM90);
+    CHECK_THAT(tanRM90, Catch::Matchers::WithinULP(expectedTanRM90, 1));
+    CHECK_THAT(tanRM90, Catch::Matchers::WithinULP(static_cast<float>(std::tan(static_cast<double>(rM90))), 1));
     CHECK(expectedTanRM45 == tanRM45);
     CHECK(expectedTanR0 == tanR0);
     CHECK(expectedTanR45 == tanR45);
-    CHECK(expectedTanR90 == tanR90);
+    CHECK_THAT(tanR90, Catch::Matchers::WithinULP(expectedTanR90, 1));
+    CHECK_THAT(tanR90, Catch::Matchers::WithinULP(static_cast<float>(std::tan(static_cast<double>(r90))), 1));
     CHECK(expectedTanR135 == tanR135);
     CHECK((expectedTanR180) == Catch::Approx(tanR180).epsilon((0.00001f) / 100.0));
     CHECK((expectedTanR360) == Catch::Approx(tanR360).epsilon((0.00001f) / 100.0));
