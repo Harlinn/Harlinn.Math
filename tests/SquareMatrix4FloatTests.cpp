@@ -33,7 +33,7 @@ namespace
                 auto v1 = m1[ i ][ j ];
                 float v2 = m2[ i ][ j ];
                 auto delta = v1 - v2;
-                if ( std::abs( delta ) > epsilon )
+                if ( !( std::abs( delta ) <= epsilon ) )
                 {
                     return false;
                 }

@@ -14,9 +14,104 @@ static_assert( Harlinn::Common::ConstantRange<std::span<const int>> );
 static_assert( !Harlinn::Common::ConstantRange<std::vector<int>> );
 static_assert( !Harlinn::Common::ConstantRange<std::span<int>> );
 static_assert( !Harlinn::Common::ConstantRange<int> );
+static_assert( Harlinn::Math::Internal::AngleBetween3( 1.0, 0.0, 0.0, 2.0, 0.0, 0.0 ) == 0.0 );
 
 namespace
 {
+    template<typename T>
+    void CheckAngleBetween3( )
+    {
+        using Vector = Harlinn::Math::Vector<T, 3>;
+        using Tuple = Harlinn::Math::Tuple3<Vector, T>;
+        using Simd = typename Vector::Simd;
+        const T tolerance = T( 32 ) * std::numeric_limits<T>::epsilon( );
+        const auto check = [tolerance]( const Vector& a, const Vector& b, T expected )
+        {
+            const Simd sa( a ), sb( b );
+            const Tuple& ta = a;
+            const Tuple& tb = b;
+            const auto checkValue = [tolerance, expected]( T actual )
+            {
+                if ( std::isnan( expected ) )
+                {
+                    CHECK( std::isnan( actual ) );
+                }
+                else
+                {
+                    CHECK( std::abs( actual - expected ) <= tolerance * std::abs( expected ) );
+                }
+            };
+            checkValue( ScalarAngleBetween( a, b ) );
+            checkValue( ScalarAngleBetween( sa, sb ) );
+            checkValue( ScalarAngleBetween( sa, b ) );
+            checkValue( ScalarAngleBetween( a, sb ) );
+            const Vector vv( AngleBetween( a, b ) );
+            const Vector vs( AngleBetween( a, sb ) );
+            const Vector sv( AngleBetween( sa, b ) );
+            const Vector ss( AngleBetween( sa, sb ) );
+            const auto tt = AngleBetween( ta, tb );
+            for ( const auto& result : { vv, vs, sv, ss } )
+            {
+                checkValue( result.x );
+                checkValue( result.y );
+                checkValue( result.z );
+            }
+            checkValue( tt.x );
+            checkValue( tt.y );
+            checkValue( tt.z );
+        };
+        const T pi = static_cast<T>( std::acos( -1.0 ) );
+        const T max = std::numeric_limits<T>::max( );
+        const T minimum = std::numeric_limits<T>::min( );
+        const T tinyAngle = T( 1e-30 );
+        const T nan = std::numeric_limits<T>::quiet_NaN( );
+        const T infinity = std::numeric_limits<T>::infinity( );
+        check( Vector( 2, 2, 2 ), Vector( 2, 0, 2 ), static_cast<T>( std::atan2( 1.0, std::sqrt( 2.0 ) ) ) );
+        check( Vector( 1, 0, 0 ), Vector( 2, 0, 0 ), T( 0 ) );
+        check( Vector( 1, 0, 0 ), Vector( -2, 0, 0 ), pi );
+        check( Vector( 1, 0, 0 ), Vector( 0, 2, 0 ), pi / T( 2 ) );
+        check( Vector( 1, 0, 0 ), Vector( 1, tinyAngle, 0 ), static_cast<T>( std::atan2( static_cast<double>( tinyAngle ), 1.0 ) ) );
+        check( Vector( max, max, 0 ), Vector( 0, minimum, 0 ), pi / T( 4 ) );
+        check( Vector( minimum, minimum, 0 ), Vector( max, 0, 0 ), pi / T( 4 ) );
+        check( Vector( 0, 0, 0 ), Vector( 1, 0, 0 ), nan );
+        check( Vector( 1, 0, 0 ), Vector( 0, 0, 0 ), nan );
+        check( Vector( infinity, 0, 0 ), Vector( 1, 0, 0 ), nan );
+        check( Vector( 1, 0, 0 ), Vector( nan, 0, 0 ), nan );
+    }
+
+    template<typename T>
+    void CheckQuaternionScalarOperations( )
+    {
+        using Q = Harlinn::Math::Quaternion<T>;
+        const Q q( T( 1 ), T( -2 ), T( 3 ), T( 4 ) );
+        const typename Q::Simd simd( q );
+        const auto check = []( const Q& actual, const Q& expected )
+        {
+            for ( size_t i = 0; i < 4; ++i )
+            {
+                CHECK( std::abs( actual[i] - expected[i] ) <= T( 8 ) * std::numeric_limits<T>::epsilon( ) );
+            }
+        };
+        check( Q( T( 3 ) - q ), Q( T( -1 ), T( 2 ), T( -3 ), T( -1 ) ) );
+        check( Q( T( 3 ) - simd ), Q( T( -1 ), T( 2 ), T( -3 ), T( -1 ) ) );
+        const Q expected( T( -0.1 ), T( 0.2 ), T( -0.3 ), T( 0.4 ) );
+        check( Q( T( 3 ) / q ), expected );
+        check( Q( T( 3 ) / simd ), expected );
+        check( Q( T( 4 ) / Q( T( 0 ), T( 0 ), T( 0 ), T( 2 ) ) ), Q( T( 0 ), T( 0 ), T( 0 ), T( 2 ) ) );
+        const T maximum = std::numeric_limits<T>::max( );
+        const T minimum = std::numeric_limits<T>::min( );
+        const T subnormal = std::numeric_limits<T>::denorm_min( );
+        const Q half( T( -0.5 ), T( -0.5 ), T( 0 ), T( 0 ) );
+        check( Q( maximum / Q( maximum, maximum, T( 0 ), T( 0 ) ) ), half );
+        check( Q( minimum / Q( minimum, minimum, T( 0 ), T( 0 ) ) ), half );
+        check( Q( subnormal / Q( subnormal, T( 0 ), T( 0 ), T( 0 ) ) ), Q( T( -1 ), T( 0 ), T( 0 ), T( 0 ) ) );
+        const Q zeroResult( T( 1 ) / Q( T( 0 ), T( 0 ), T( 0 ), T( 0 ) ) );
+        for ( size_t i = 0; i < 4; ++i )
+        {
+            CHECK( std::isnan( zeroResult[i] ) );
+        }
+    }
+
     template<typename T, size_t N>
     void CheckSimdMemoryBounds( )
     {
@@ -112,6 +207,18 @@ namespace
             CHECK( mixedBranches[i] == ( i % 2 == 0 ? T( 0 ) : T( 7 ) ) );
         }
     }
+}
+
+TEST_CASE("Three-dimensional angles are independent of vector magnitude", "[math][angle]")
+{
+    CheckAngleBetween3<float>( );
+    CheckAngleBetween3<double>( );
+}
+
+TEST_CASE("Real and quaternion arithmetic follows quaternion algebra", "[math][quaternion]")
+{
+    CheckQuaternionScalarOperations<float>( );
+    CheckQuaternionScalarOperations<double>( );
 }
 
 TEST_CASE("SIMD floating point loads and stores respect vector bounds", "[math][simd]")

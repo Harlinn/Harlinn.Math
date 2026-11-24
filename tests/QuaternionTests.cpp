@@ -38,7 +38,7 @@ namespace
             auto v1 = q1[ i ];
             float v2 = q2[ i ];
             auto delta = v1 - v2;
-            if ( std::abs( delta ) > epsilon )
+            if ( !( std::abs( delta ) <= epsilon ) )
             {
                 return false;
             }
@@ -51,7 +51,7 @@ namespace
     {
         for ( size_t i = 0; i < Count; i++ )
         {
-            if ( std::abs( q1[ i ] - q2[ i ] ) > epsilon )
+            if ( !( std::abs( q1[ i ] - q2[ i ] ) <= epsilon ) )
             {
                 return false;
             }
@@ -114,7 +114,7 @@ TEST_CASE("QuaternionTests / SubtractScalarTest1", "[math][QuaternionTests]")
     float v1 = 2.f;
     float v2 = 3.f;
     Q expected1( 1.f, 2.f, 3.f, 2.f );
-    Q expected2( 1.f, 2.f, 3.f, -1.f );
+    Q expected2( -1.f, -2.f, -3.f, -1.f );
 
     Q result1 = q1 - v1;
     Q result2 = v2 - q1;
@@ -176,7 +176,7 @@ TEST_CASE("QuaternionTests / DivisionScalarTest1", "[math][QuaternionTests]")
     float v1 = 2.f;
     float v2 = 3.f;
     Q expected1( 1.f / 2.f, 2.f / 2.f, 3.f / 2.f, 4.f / 2.f );
-    Q expected2( 3.f / 1.f, 3.f / 2.f, 3.f / 3.f, 3.f / 4.f );
+    Q expected2( -0.1f, -0.2f, -0.3f, 0.4f );
 
     Q result1 = q1 / v1;
     Q result2 = v2 / q1;
@@ -188,6 +188,7 @@ TEST_CASE("QuaternionTests / DivisionScalarTest1", "[math][QuaternionTests]")
     equal = Equal( result2, expected2 );
 
     CHECK(equal);
+    CHECK( Equal( Q( result2 * q1 ), Q( 0.f, 0.f, 0.f, v2 ) ) );
 }
 TEST_CASE("QuaternionTests / DotTest1", "[math][QuaternionTests]")
 {
@@ -289,6 +290,21 @@ TEST_CASE("QuaternionTests / SlerpTest1", "[math][QuaternionTests]")
     auto equal = Equal( result, expected );
 
     CHECK(equal);
+}
+TEST_CASE("QuaternionTests / Slerp follows the shortest arc", "[math][QuaternionTests]")
+{
+    const Q identity( 0.f, 0.f, 0.f, 1.f );
+    const Q target( static_cast<float>( std::sin( std::acos( -1.0 ) / 3.0 ) ), 0.f, 0.f, 0.5f );
+    const Q opposite( -target[ 0 ], -target[ 1 ], -target[ 2 ], -target[ 3 ] );
+    const Q quarter( static_cast<float>( std::sin( std::acos( -1.0 ) / 12.0 ) ), 0.f, 0.f,
+        static_cast<float>( std::cos( std::acos( -1.0 ) / 12.0 ) ) );
+    CHECK( Equal( Q( Slerp( identity, target, 0.f ) ), identity ) );
+    CHECK( Equal( Q( Slerp( identity, target, 1.f ) ), target ) );
+    CHECK( Equal( Q( Slerp( identity, target, 0.25f ) ), quarter ) );
+    CHECK( Equal( Q( Slerp( identity, opposite, 0.25f ) ), quarter ) );
+    CHECK( Equal( Q( Slerp( identity, identity, 0.5f ) ), identity ) );
+    const Math::Vector<float, 4> t( 0.25f, 0.25f, 0.25f, 0.25f );
+    CHECK( Equal( Q( Slerp( identity, target, t ) ), quarter ) );
 }
 TEST_CASE("QuaternionTests / XMQuaternionRotateTest1", "[math][QuaternionTests]")
 {

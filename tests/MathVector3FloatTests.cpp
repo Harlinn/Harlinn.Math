@@ -162,10 +162,9 @@ TEST_CASE("MathVector3FloatTests / AngleBetweenTest2", "[math][MathVector3FloatT
     Vector v2( 2.0f, 0.0f, 2.f );
 
     auto angle = ScalarAngleBetween( v1, v2 );
+    const auto expected = static_cast<float>( std::acos( 2.0 / std::sqrt( 6.0 ) ) );
 
-    bool angleAsExpected = AreNearlyEqual( angle, Math::Constants<float>::Pi);
-
-    CHECK(angleAsExpected);
+    CHECK( AreNearlyEqual( angle, expected ) );
 }
 TEST_CASE("MathVector3FloatTests / HSumTest1", "[math][MathVector3FloatTests]")
 {

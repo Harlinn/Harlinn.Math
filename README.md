@@ -15,6 +15,18 @@ Each Ubuntu job installs and selects the newest versioned compiler available
 from the runner's configured apt repositories. For local builds, select the
 intended compiler explicitly as shown below.
 
+## Numerical behavior
+
+- Three-dimensional `AngleBetween` and `ScalarAngleBetween` accept non-unit
+  vectors and return radians. A zero or nonfinite vector yields NaN.
+- Real-scalar subtraction and division with a quaternion follow quaternion
+  algebra: `s - q` negates the vector part, and `s / q` multiplies the
+  quaternion inverse by `s`. This replaces the earlier componentwise division.
+  Division by a zero or nonfinite quaternion, or with a nonfinite scalar,
+  returns NaN components.
+- Quaternion `Slerp` takes unit quaternions and chooses the shortest rotation
+  arc, so its endpoint may be the negation of the supplied second quaternion.
+
 ## Prerequisites
 
 - A C++23 compiler and standard library, CMake 3.25 or newer, Ninja, and Git.

@@ -8740,7 +8740,7 @@ namespace Harlinn::Math::SIMD
 
             control = Less( cosOmega, OneMinusEpsilon );
 
-            auto sinOmega = FNMSub( cosOmega, cosOmega, One );
+            auto sinOmega = FNMAdd( cosOmega, cosOmega, One );
 
             sinOmega = Sqrt( sinOmega );
 

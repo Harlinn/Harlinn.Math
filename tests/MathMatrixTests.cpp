@@ -73,7 +73,7 @@ namespace
 
         for ( size_t i = 0; i < actualArray.size( ); ++i )
         {
-            if ( std::abs( actualArray[ i ] - expectedArray[ i ] ) > epsilon )
+            if ( !( std::abs( actualArray[ i ] - expectedArray[ i ] ) <= epsilon ) )
             {
                 return false;
             }

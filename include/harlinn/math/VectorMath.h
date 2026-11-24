@@ -21,6 +21,7 @@
    #include <cstddef>
 
    #include "Math.h"
+   #include <cmath>
 
 namespace Harlinn::Math
 {
@@ -10132,6 +10133,34 @@ namespace Harlinn::Math
 
     namespace Internal
     {
+        template<FloatingPointType T>
+        [[nodiscard]] constexpr T AngleBetween3( T ax, T ay, T az, T bx, T by, T bz ) noexcept
+        {
+            if ( !IsFinite( ax, ay, az, bx, by, bz ) )
+            {
+                return std::numeric_limits<T>::quiet_NaN( );
+            }
+            const T aScale = Max( Abs( ax ), Abs( ay ), Abs( az ) );
+            const T bScale = Max( Abs( bx ), Abs( by ), Abs( bz ) );
+            if ( aScale == T( 0 ) || bScale == T( 0 ) )
+            {
+                return std::numeric_limits<T>::quiet_NaN( );
+            }
+            ax /= aScale; ay /= aScale; az /= aScale;
+            bx /= bScale; by /= bScale; bz /= bScale;
+            const T x = ay * bz - az * by;
+            const T y = az * bx - ax * bz;
+            const T z = ax * by - ay * bx;
+            const T crossScale = Max( Abs( x ), Abs( y ), Abs( z ) );
+            T crossLength = T( 0 );
+            if ( crossScale != T( 0 ) )
+            {
+                const T sx = x / crossScale, sy = y / crossScale, sz = z / crossScale;
+                crossLength = crossScale * Sqrt( sx * sx + sy * sy + sz * sz );
+            }
+            return ATan2( crossLength, ax * bx + ay * by + az * bz );
+        }
+
         /// <summary>
         /// Calculates the angle in radians between two vectors.
         /// </summary>
@@ -10153,20 +10182,26 @@ namespace Harlinn::Math
             using SIMDType = typename Traits::SIMDType;
             using Simd = S;
 
-            constexpr SIMDType minusOne = { -1.f,-1.f,-1.f,-1.f };
-            constexpr SIMDType one = { 1.f,1.f,1.f,1.f };
+            if constexpr ( S::Size == 3 && FloatingPointType<typename S::value_type> )
+            {
+                using Tuple = typename S::TupleType;
+                const Tuple a( v1 ), b( v2 );
+                const auto angle = AngleBetween3( a.x, a.y, a.z, b.x, b.y, b.z );
+                return Simd( Traits::Fill( angle ) );
+            }
+            else
+            {
+                constexpr SIMDType minusOne = { -1.f,-1.f,-1.f,-1.f };
+                constexpr SIMDType one = { 1.f,1.f,1.f,1.f };
 
-            auto l1 = ReciprocalLength( v1 );
-            auto l2 = ReciprocalLength( v2 );
-
-            auto dot = Dot( v1, v2 );
-
-            l1 = l1 * l2;
-
-            auto cosine = dot * l1;
-            cosine.simd = Traits::Clamp( cosine.simd, minusOne, one );
-
-            return ACos( cosine );
+                auto l1 = ReciprocalLength( v1 );
+                auto l2 = ReciprocalLength( v2 );
+                auto dot = Dot( v1, v2 );
+                l1 = l1 * l2;
+                auto cosine = dot * l1;
+                cosine.simd = Traits::Clamp( cosine.simd, minusOne, one );
+                return ACos( cosine );
+            }
         }
     }
 
@@ -10180,8 +10215,8 @@ namespace Harlinn::Math
     /// The second vector.
     /// </param>
     /// <returns>
-    /// A vector where with each element set to the 
-    /// angle between the two argument vectors.
+    /// A vector with each element set to the angle between the argument vectors.
+    /// For 3D vectors, a zero or nonfinite vector yields NaN.
     /// </returns>
     template<VectorOrVectorSimdType S, VectorOrVectorSimdType T>
         requires IsCompatible<S, T>
@@ -11793,9 +11828,7 @@ namespace Harlinn::Math
         using ResultType = typename U::Simd;
         auto v = static_cast< FloatT >( value );
         auto zero = static_cast< FloatT >( 0. );
-        auto q2simd = Internal::ToSimd( q2 );
-        auto tmp = Traits::Sub( Traits::Set( v, zero, zero, zero ), q2simd );
-        return ResultType( Traits::template Permute<4, 5, 6, 3>( tmp, q2simd ) );
+        return ResultType( Traits::Sub( Traits::Set( v, zero, zero, zero ), Internal::ToSimd( q2 ) ) );
     }
 
     // Multiplication
@@ -11839,13 +11872,46 @@ namespace Harlinn::Math
         return ResultType( Traits::Div( Internal::ToSimd( q1 ), Traits::Fill( static_cast< FloatT >( value ) ) ) );
     }
 
+    /// <summary>
+    /// Divides a real scalar by a quaternion using its multiplicative inverse.
+    /// A zero or nonfinite quaternion or nonfinite scalar yields NaN components.
+    /// </summary>
     template<ArithmeticType T, QuaternionOrQuaternionSimdType U>
     [[nodiscard]] auto operator / ( const T value, const U& q2 ) noexcept
     {
         using Traits = typename U::Traits;
         using FloatT = typename Traits::Type;
         using ResultType = typename U::Simd;
-        return ResultType( Traits::Div( Traits::Fill( static_cast< FloatT >( value ) ), Internal::ToSimd( q2 ) ) );
+        auto components = Traits::ToArray( Internal::ToSimd( q2 ) );
+        const auto v = static_cast< FloatT >( value );
+        if ( !IsFinite( v, components[ 0 ], components[ 1 ], components[ 2 ], components[ 3 ] ) )
+        {
+            return ResultType( Traits::Fill( std::numeric_limits<FloatT>::quiet_NaN( ) ) );
+        }
+        const auto scale = Max( Abs( components[ 0 ] ), Abs( components[ 1 ] ), Abs( components[ 2 ] ), Abs( components[ 3 ] ) );
+        if ( scale == FloatT( 0 ) )
+        {
+            return ResultType( Traits::Fill( std::numeric_limits<FloatT>::quiet_NaN( ) ) );
+        }
+        FloatT normSquared = 0;
+        for ( const auto component : components )
+        {
+            const auto scaled = component / scale;
+            normSquared += scaled * scaled;
+        }
+        int scaleExponent = 0, valueExponent = 0;
+        const auto scaleFraction = std::frexp( scale, &scaleExponent );
+        const auto valueFraction = std::frexp( v, &valueExponent );
+        for ( size_t i = 0; i < 4; ++i )
+        {
+            int componentExponent = 0;
+            const auto componentFraction = std::frexp( components[ i ], &componentExponent );
+            // Combine exponents only at the end so neither the squared norm nor the numerator overflows.
+            const auto fraction = valueFraction * componentFraction / ( scaleFraction * scaleFraction * normSquared );
+            const auto result = std::scalbn( fraction, valueExponent + componentExponent - 2 * scaleExponent );
+            components[ i ] = i == 3 ? result : -result;
+        }
+        return ResultType( Traits::Load( components ) );
     }
 
 
@@ -12161,7 +12227,7 @@ namespace Harlinn::Math
     /// </param>
     /// <param name="t">
     /// Interpolation control factor. Every element of this vector must be set to the same value.
-    /// When the elements of t is 0.0, the function returns q1, and when the elements of t is 1.0, the function returns q2.
+    /// At 0 the result is q1; at 1 it is q2 or -q2, whichever follows the shortest arc.
     /// </param>
     /// <returns></returns>
     template<QuaternionOrQuaternionSimdType T, QuaternionOrQuaternionSimdType U, SimdOrTupleType V>
@@ -12183,8 +12249,8 @@ namespace Harlinn::Math
     /// The unit quaternion to interpolate to.
     /// </param>
     /// <param name="t">
-    /// Interpolation control factor. When the value of t is 0.0, the function returns q1, 
-    /// and when the value of t is 1.0, the function returns q2.
+    /// Interpolation control factor. At 0 the result is q1; at 1 it is q2 or -q2,
+    /// whichever follows the shortest arc.
     /// </param>
     /// <returns></returns>
     template<QuaternionOrQuaternionSimdType T, QuaternionOrQuaternionSimdType U, ArithmeticType V>
@@ -12325,39 +12391,28 @@ namespace Harlinn::Math
 
 
 
+    /// <summary>
+    /// Returns the angle in radians between two 3D directions. Zero or nonfinite
+    /// vectors have no defined direction and yield NaN.
+    /// </summary>
     template<SimdType T, SimdType U>
-        requires IsCompatible<T, U>
+        requires IsCompatible<T, U> && ( T::Size == 3 )
     [[nodiscard]] constexpr inline auto ScalarAngleBetween( const T& v1, const U& v2 )
     {
-        using Traits = typename T::Traits;
         using TupleType = typename T::TupleType;
-        using FloatT = typename TupleType::value_type;
-
-        auto dotProduct = Dot( v1, v2 );
-
-        if ( Traits::First( dotProduct.simd ) < 0 )
-        {
-            TupleType s = Sqr( v1 + v2 );
-            auto halfLength = Sqrt( s.x + s.y + s.z ) / static_cast< FloatT >( 2. );
-            return Constants<FloatT>::Pi - static_cast< FloatT >( 2. ) * SafeASin( halfLength );
-        }
-        else
-        {
-            TupleType s = Sqr( v2 - v1 );
-            auto halfLength = Sqrt( s.x + s.y + s.z ) / static_cast< FloatT >( 2. );
-            return static_cast< FloatT >( 2. ) * SafeASin( halfLength );
-        }
+        const TupleType a( v1 ), b( v2 );
+        return Internal::AngleBetween3( a.x, a.y, a.z, b.x, b.y, b.z );
     }
 
     template<SimdType T, TupleType U>
-        requires IsCompatible<T, U>
+        requires IsCompatible<T, U> && ( T::Size == 3 )
     [[nodiscard]] constexpr inline auto ScalarAngleBetween( const T& v1, const U& v2 )
     {
         return ScalarAngleBetween( v1, typename U::Simd( v2 ) );
     }
 
     template<TupleType T, SimdType U>
-        requires IsCompatible<T, U>
+        requires IsCompatible<T, U> && ( T::Size == 3 )
     [[nodiscard]] constexpr inline auto ScalarAngleBetween( const T& v1, const U& v2 )
     {
         return ScalarAngleBetween( typename T::Simd( v1 ), v2 );
@@ -12368,32 +12423,7 @@ namespace Harlinn::Math
     template<typename DerivedT, typename FloatT>
     [[nodiscard]] constexpr inline FloatT ScalarAngleBetween( const Tuple3<DerivedT, FloatT>& v1, const Tuple3<DerivedT, FloatT>& v2 )
     {
-        auto dotProduct = v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
-
-        if ( dotProduct < 0 )
-        {
-            auto sx = v1.x + v2.x;
-            sx *= sx;
-            auto sy = v1.y + v2.y;
-            sy *= sy;
-            auto sz = v1.z + v2.z;
-            sz *= sz;
-
-            auto halfLength = Sqrt( sx + sy + sz ) / static_cast< FloatT >( 2. );
-            return Constants<FloatT>::Pi - static_cast< FloatT >( 2. ) * SafeASin( halfLength );
-        }
-        else
-        {
-            auto sx = v2.x - v1.x;
-            sx *= sx;
-            auto sy = v2.y - v1.y;
-            sy *= sy;
-            auto sz = v2.z - v1.z;
-            sz *= sz;
-
-            auto halfLength = Sqrt( sx + sy + sz ) / static_cast< FloatT >( 2. );
-            return static_cast< FloatT >( 2. ) * SafeASin( halfLength );
-        }
+        return Internal::AngleBetween3( v1.x, v1.y, v1.z, v2.x, v2.y, v2.z );
     }
 
     template<typename DerivedT, typename FloatT>
