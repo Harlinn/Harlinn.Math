@@ -49,6 +49,22 @@ struct LoadStore1Test1Impl
         }
     };
 };
+TEST_CASE("SIMDByteTests / UnalignedLoad16", "[math][SIMDByteTests]")
+{
+    using Traits = SIMD::Traits<Byte, 16>;
+    alignas( 16 ) std::array<Byte, 17> input{};
+    for ( size_t i = 0; i < 16; ++i )
+    {
+        input[ i + 1 ] = static_cast<Byte>( i + 1 );
+    }
+
+    alignas( Traits::AlignAs ) std::array<Byte, 16> result{};
+    Traits::Store( result.data( ), Traits::Load( input.data( ) + 1 ) );
+    for ( size_t i = 0; i < result.size( ); ++i )
+    {
+        CHECK( result[ i ] == input[ i + 1 ] );
+    }
+}
 TEST_CASE("SIMDByteTests / LoadStore1Test1", "[math][SIMDByteTests]")
 {
     std::array<Byte, 32> values

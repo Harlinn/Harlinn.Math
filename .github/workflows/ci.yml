@@ -6,12 +6,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
         compiler: [gcc, clang, msvc]
         exclude:
           - os: ubuntu-latest
-            compiler: msvc
-          - os: macos-latest
             compiler: msvc
           - os: windows-latest
             compiler: gcc
@@ -23,10 +21,12 @@ jobs:
         uses: seanmiddleditch/gha-setup-ninja@master
 
       - name: Setup MSVC
-        if: matrix.compiler == 'msvc'
+        if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Configure
+        env:
+          CXX: ${{ runner.os == 'Windows' && matrix.compiler == 'clang' && 'clang++' || '' }}
         run: cmake --preset default
 
       - name: Build

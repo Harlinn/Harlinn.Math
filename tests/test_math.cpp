@@ -4,6 +4,7 @@
 #include <cfenv>
 #include <cfloat>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <span>
 #include <vector>
@@ -197,4 +198,34 @@ TEST_CASE("SquareMatrix array constructors copy values", "[math][matrix]")
     REQUIRE( fromRows[1][1] == 4.0f );
     REQUIRE( fromValues[0][1] == 6.0f );
     REQUIRE( fromValues[1][0] == 7.0f );
+}
+
+TEST_CASE("SquareMatrix 2x2 SIMD conversions accept unaligned input", "[math][matrix]")
+{
+    using Matrix = Harlinn::Math::SquareMatrix<float, 2>;
+    using Simd = Matrix::Simd;
+    struct alignas( 16 ) Inputs
+    {
+        float padding;
+        Matrix matrix;
+        Simd::ArrayType array;
+        float rows[2][2];
+    };
+    Inputs input{ 0.f, Matrix( 1.f, 2.f, 3.f, 4.f ), {{{ 1.f, 2.f }, { 3.f, 4.f }}}, {{ 1.f, 2.f }, { 3.f, 4.f }} };
+    REQUIRE( reinterpret_cast<std::uintptr_t>( &input.matrix[0][0] ) % 16 != 0 );
+    REQUIRE( reinterpret_cast<std::uintptr_t>( &input.array[0][0] ) % 16 != 0 );
+    REQUIRE( reinterpret_cast<std::uintptr_t>( &input.rows[0][0] ) % 16 != 0 );
+
+    const auto check = []( const Simd& simd )
+    {
+        const auto result = Simd::ToMatrix( simd );
+        CHECK( result[0][0] == 1.f );
+        CHECK( result[0][1] == 2.f );
+        CHECK( result[1][0] == 3.f );
+        CHECK( result[1][1] == 4.f );
+    };
+    check( Simd( input.matrix ) );
+    check( Simd( input.array ) );
+    check( Simd( Simd::ToSimd( input.array ) ) );
+    check( Simd( Simd::ToSimd( input.rows ) ) );
 }

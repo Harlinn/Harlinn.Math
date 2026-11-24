@@ -1507,7 +1507,7 @@ namespace Harlinn::Math::SIMD
                 }
                 else if constexpr ( Size == 16 )
                 {
-                    return _mm_load_si128( reinterpret_cast< const __m128i* >( src ) );
+                    return _mm_loadu_si128( reinterpret_cast< const __m128i* >( src ) );
                 }
                 else
                 {

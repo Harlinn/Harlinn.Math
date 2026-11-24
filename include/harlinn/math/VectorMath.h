@@ -12572,17 +12572,17 @@ namespace Harlinn::Math
 
         [[nodiscard]] static SIMDType ToSimd( const ArrayType& matrix )
         {
-            return Traits::Load( matrix[ 0 ].data( ) );
+            return Traits::UnalignedLoad( matrix[ 0 ].data( ) );
         }
         [[nodiscard]] static SIMDType ToSimd( const value_type matrix[ Size ][ Size ] )
         {
-            return Traits::Load( &matrix[ 0 ][ 0 ] );
+            return Traits::UnalignedLoad( &matrix[ 0 ][ 0 ] );
         }
 
         [[nodiscard]] static ArrayType ToMatrix( const SquareMatrixSimd& simd )
         {
             ArrayType result;
-            Traits::Store( result[ 0 ].data( ), simd.simd );
+            Traits::UnalignedStore( result[ 0 ].data( ), simd.simd );
             return result;
         }
 
@@ -12605,12 +12605,12 @@ namespace Harlinn::Math
         {
         }
         explicit SquareMatrixSimd( const ArrayType& matrix )
-            : simd( Traits::Load( matrix[ 0 ].data( ) ) )
+            : simd( ToSimd( matrix ) )
         {
         }
 
         explicit SquareMatrixSimd( const MatrixType& matrix )
-            : simd( Traits::Load( matrix[ 0 ].data( ) ) )
+            : simd( Traits::UnalignedLoad( matrix[ 0 ].data( ) ) )
         {
         }
 
