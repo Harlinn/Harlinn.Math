@@ -11,14 +11,12 @@ jobs:
         exclude:
           - os: ubuntu-latest
             compiler: msvc
-          - os: windows-latest
-            compiler: gcc
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Ninja
-        if: runner.os != 'Windows' || matrix.compiler != 'clang'
+        if: runner.os != 'Windows' || matrix.compiler == 'msvc'
         uses: seanmiddleditch/gha-setup-ninja@master
 
       - name: Setup MSVC
@@ -36,32 +34,43 @@ jobs:
             mingw-w64-clang-x86_64-cmake
             mingw-w64-clang-x86_64-ninja
 
+      - name: Setup MSYS2 UCRT64
+        if: runner.os == 'Windows' && matrix.compiler == 'gcc'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: >-
+            git
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+
       - name: Configure
-        if: runner.os != 'Windows' || matrix.compiler != 'clang'
+        if: runner.os != 'Windows' || matrix.compiler == 'msvc'
         run: cmake --preset default
 
       - name: Build
-        if: runner.os != 'Windows' || matrix.compiler != 'clang'
+        if: runner.os != 'Windows' || matrix.compiler == 'msvc'
         run: cmake --build --preset default
 
       - name: Test
-        if: runner.os != 'Windows' || matrix.compiler != 'clang'
+        if: runner.os != 'Windows' || matrix.compiler == 'msvc'
         run: ctest --preset default
 
-      - name: Configure MSYS2 Clang
-        if: runner.os == 'Windows' && matrix.compiler == 'clang'
+      - name: Configure MSYS2
+        if: runner.os == 'Windows' && matrix.compiler != 'msvc'
         shell: msys2 {0}
         env:
-          CC: clang
-          CXX: clang++
+          CC: ${{ matrix.compiler == 'clang' && 'clang' || 'gcc' }}
+          CXX: ${{ matrix.compiler == 'clang' && 'clang++' || 'g++' }}
         run: cmake --preset default
 
-      - name: Build MSYS2 Clang
-        if: runner.os == 'Windows' && matrix.compiler == 'clang'
+      - name: Build MSYS2
+        if: runner.os == 'Windows' && matrix.compiler != 'msvc'
         shell: msys2 {0}
         run: cmake --build --preset default
 
-      - name: Test MSYS2 Clang
-        if: runner.os == 'Windows' && matrix.compiler == 'clang'
+      - name: Test MSYS2
+        if: runner.os == 'Windows' && matrix.compiler != 'msvc'
         shell: msys2 {0}
         run: ctest --preset default
